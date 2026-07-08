@@ -1,5 +1,5 @@
 import Sidebar from "./Sidebar";
-
+import TopHeader from "./layout/TopHeader";
 type AppLayoutProps = {
   children: React.ReactNode;
 };
@@ -10,9 +10,11 @@ export default function AppLayout({ children }: AppLayoutProps) {
       <Sidebar />
 
       <main className="flex-1">
-        <div className="max-w-6xl mx-auto px-8 py-10">
-          {children}
-        </div>
+        <div className="max-w-7xl mx-auto p-8">
+    <TopHeader />
+
+    {children}
+</div>
       </main>
     </div>
   );

@@ -1,16 +1,14 @@
 "use client";
 
-import Link from "next/link";
+import QuickActions from "../components/dashboard/QuickActions";
 import AppLayout from "../components/AppLayout";
 import { useKitchen } from "../context/KitchenContext";
 import {
-  CalendarDays,
   BookOpen,
   Package,
   ShoppingCart,
   HeartPulse,
-  Plus,
-} from "lucide-react";
+  } from "lucide-react";
 
 export default function Home() {
   const { pantry, shopping, planner, recipes } = useKitchen();
@@ -63,97 +61,84 @@ export default function Home() {
   const groceryRemaining = shopping.filter((item) => !item.purchased).length;
 
   const stats = [
-    {
-      title: "Pantry Items",
-      value: totalPantryItems,
-      icon: Package,
-      color: "bg-green-100 text-green-700",
-    },
-    {
-      title: "Recipes",
-      value: recipes.length,
-      icon: BookOpen,
-      color: "bg-yellow-100 text-yellow-700",
-    },
-    {
-      title: "Grocery Pending",
-      value: groceryRemaining,
-      icon: ShoppingCart,
-      color: "bg-blue-100 text-blue-700",
-    },
-    {
-      title: "Kitchen Health",
-      value: `${pantryHealth}%`,
-      icon: HeartPulse,
-      color: "bg-red-100 text-red-700",
-    },
-  ];
+  {
+    title: "Pantry Items",
+    value: totalPantryItems,
+    subtitle:
+      lowStockItems === 0
+        ? "Well Stocked"
+        : `${lowStockItems} Low Stock`,
+    icon: Package,
+    color: "bg-green-100 text-green-700",
+  },
+  {
+    title: "Recipes",
+    value: recipes.length,
+    subtitle: "Ready to Cook",
+    icon: BookOpen,
+    color: "bg-yellow-100 text-yellow-700",
+  },
+  {
+    title: "Grocery",
+    value: groceryRemaining,
+    subtitle:
+      groceryRemaining === 0
+        ? "Completed"
+        : "Items Pending",
+    icon: ShoppingCart,
+    color: "bg-blue-100 text-blue-700",
+  },
+  {
+    title: "Kitchen Health",
+    value: `${pantryHealth}%`,
+    subtitle:
+      pantryHealth >= 90
+        ? "Excellent"
+        : pantryHealth >= 70
+        ? "Good"
+        : pantryHealth >= 50
+        ? "Fair"
+        : "Needs Attention",
+    icon: HeartPulse,
+    color: "bg-red-100 text-red-700",
+  },
+];
 
   return (
     <AppLayout>
       <div className="space-y-8">
-        <section className="rounded-3xl bg-[#2F6B3C] text-white p-8 shadow-md">
-          <p className="text-sm opacity-90">{formattedDate}</p>
-
-          <h1 className="text-4xl font-bold mt-3">
-            {greeting}, Sarika 🌿
-          </h1>
-
-          <p className="mt-3 text-white/90">
-            Here&apos;s what&apos;s happening in your kitchen today.
-          </p>
-
-          <div className="flex flex-wrap gap-3 mt-6">
-            <Link
-              href="/planner"
-              className="bg-white text-[#2F6B3C] px-5 py-3 rounded-xl font-semibold flex items-center gap-2"
-            >
-              <CalendarDays size={18} />
-              Plan Week
-            </Link>
-
-            <Link
-              href="/recipes"
-              className="bg-[#D89B3C] text-white px-5 py-3 rounded-xl font-semibold flex items-center gap-2"
-            >
-              <Plus size={18} />
-              Add Recipe
-            </Link>
-
-            <Link
-              href="/pantry"
-              className="bg-white/15 text-white px-5 py-3 rounded-xl font-semibold flex items-center gap-2"
-            >
-              <Package size={18} />
-              Pantry
-            </Link>
-          </div>
-        </section>
+        
 
         <section className="grid md:grid-cols-4 gap-5">
-          {stats.map((stat) => {
-            const Icon = stat.icon;
+  {stats.map((stat) => {
+    const Icon = stat.icon;
 
-            return (
-              <div
-                key={stat.title}
-                className="bg-white rounded-2xl border border-[#EADCC4] p-5 shadow-sm"
-              >
-                <div
-                  className={`w-11 h-11 rounded-xl flex items-center justify-center ${stat.color}`}
-                >
-                  <Icon size={22} />
-                </div>
+    return (
+      <div
+        key={stat.title}
+        className="bg-white rounded-2xl border border-[#EADCC4] p-5 shadow-sm"
+      >
+        <div
+          className={`w-11 h-11 rounded-xl flex items-center justify-center ${stat.color}`}
+        >
+          <Icon size={22} />
+        </div>
 
-                <p className="text-sm text-gray-500 mt-4">{stat.title}</p>
+        <h2 className="text-3xl font-bold text-[#5A4032] mt-4">
+  {stat.value}
+</h2>
 
-                <h2 className="text-3xl font-bold text-[#5A4032] mt-1">
-                  {stat.value}
-                </h2>
-              </div>
-            );
-          })}
-        </section>
+<p className="text-sm font-semibold text-[#2F6B3C] mt-1">
+  {stat.title}
+</p>
+
+<p className="text-xs text-gray-500 mt-1">
+  {stat.subtitle}
+</p>
+      </div>
+    );
+  })}
+</section>
 
         <section className="grid lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 bg-white rounded-2xl border border-[#EADCC4] p-6 shadow-sm">
@@ -163,25 +148,33 @@ export default function Home() {
 
             <div className="grid md:grid-cols-2 gap-4 mt-5">
               {[
-                ["🥤", "Morning Drink", todaysPlan?.morningDrink],
-                ["🍳", "Breakfast", todaysPlan?.breakfast],
-                ["🍛", "Lunch", todaysPlan?.lunch],
-                ["🥪", "Snack", todaysPlan?.snack],
-                ["🥘", "Dinner", todaysPlan?.dinner],
-              ].map(([emoji, label, recipeId]) => (
-                <div
-                  key={label}
-                  className="rounded-xl bg-[#FFF8EC] border border-[#F4E8D0] p-4"
-                >
-                  <p className="text-sm text-gray-500">
-                    {emoji} {label}
-                  </p>
+  ["🥤", "Morning Drink", todaysPlan?.morningDrink],
+  ["🍳", "Breakfast", todaysPlan?.breakfast],
+  ["🍛", "Lunch", todaysPlan?.lunch],
+  ["🥪", "Snack", todaysPlan?.snack],
+  ["🥘", "Dinner", todaysPlan?.dinner],
+].map(([emoji, label, recipeId]) => (
+  <div
+    key={label}
+    className="rounded-2xl bg-gradient-to-br from-[#FFF8EC] to-white border border-[#F4E8D0] p-5 shadow-sm hover:shadow-md transition-all duration-200"
+  >
+    <div className="flex items-center gap-3">
+      <div className="w-12 h-12 rounded-xl bg-white shadow-sm flex items-center justify-center text-2xl">
+        {emoji}
+      </div>
 
-                  <p className="font-semibold text-[#5A4032] mt-1">
-                    {getRecipeName(recipeId as string)}
-                  </p>
-                </div>
-              ))}
+      <div>
+        <p className="text-sm text-gray-500">
+          {label}
+        </p>
+
+        <p className="font-semibold text-[#2F6B3C] mt-1">
+          {getRecipeName(recipeId as string)}
+        </p>
+      </div>
+    </div>
+  </div>
+))}
             </div>
           </div>
 
