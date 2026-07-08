@@ -180,7 +180,7 @@ http://localhost:3000
 
 # 👩‍💻 Author
 
-**Sarika Raj**
+**Sarika Nair**
 
 Business Development Professional | Learning Full-Stack Development
 
