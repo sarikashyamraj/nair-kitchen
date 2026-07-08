@@ -1,5 +1,4 @@
 # 🍽️ Nair Kitchen
-# 🍽️ Nair Kitchen
 
 ![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)
 ![React](https://img.shields.io/badge/React-19-61DAFB?logo=react)
@@ -7,7 +6,18 @@
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4-06B6D4?logo=tailwindcss&logoColor=white)
 ![Version](https://img.shields.io/badge/Version-v1.0-success)
 ![Status](https://img.shields.io/badge/Status-Active-brightgreen)
+
+A modern **Family Kitchen Management System** built with **Next.js**, **React**, **TypeScript**, and **Tailwind CSS**.
+
+Nair Kitchen helps families efficiently manage recipes, pantry inventory, grocery shopping, and weekly meal planning through a clean, intuitive dashboard.
+
+---
+
 # 💡 Why Nair Kitchen?
+
+Nair Kitchen was created to simplify everyday meal planning for families.
+
+Instead of using separate apps for grocery shopping, recipes, pantry management, and weekly meal planning, Nair Kitchen brings everything together in one intuitive application.
 
 Nair Kitchen was created to simplify everyday meal planning for families.
 
