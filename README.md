@@ -1,5 +1,20 @@
 # 🍽️ Nair Kitchen
+# 🍽️ Nair Kitchen
 
+![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)
+![React](https://img.shields.io/badge/React-19-61DAFB?logo=react)
+![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4-06B6D4?logo=tailwindcss&logoColor=white)
+![Version](https://img.shields.io/badge/Version-v1.0-success)
+![Status](https://img.shields.io/badge/Status-Active-brightgreen)
+# 💡 Why Nair Kitchen?
+
+Nair Kitchen was created to simplify everyday meal planning for families.
+
+Instead of using separate apps for grocery shopping, recipes, pantry management, and weekly meal planning, Nair Kitchen brings everything together in one intuitive application.
+
+The project was built to solve a real household need while also serving as a hands-on learning journey into modern web development using Next.js, React, TypeScript, and Tailwind CSS.
+A modern **Family Kitchen Management System** built with **Next.js**, **React**, **TypeScript**, and **Tailwind CSS**.
 A modern **Smart Family Kitchen Management System** built with **Next.js**, **React**, **TypeScript**, and **Tailwind CSS**.
 
 Nair Kitchen helps families efficiently manage recipes, pantry inventory, grocery shopping, and weekly meal planning through a clean, intuitive dashboard.
@@ -7,7 +22,18 @@ Nair Kitchen helps families efficiently manage recipes, pantry inventory, grocer
 ---
 
 # 📸 Application Preview
+# 📊 Current Status
 
+| Module | Status |
+|---------|--------|
+| 🏠 Dashboard | ✅ Complete |
+| 🥫 Pantry Management | ✅ Complete |
+| 🛒 Grocery Management | ✅ Complete |
+| 🍳 Recipe Management | ✅ Complete |
+| 📅 Weekly Meal Planner | ✅ Complete |
+| 📱 Mobile Experience | 🚧 Planned |
+| 💾 Data Backup & Restore | 📋 Planned |
+| 🤖 AI Features | 💡 Future Release |
 ## 🏠 Dashboard
 
 ![Dashboard](screenshots/dashboard.png)
@@ -149,32 +175,39 @@ http://localhost:3000
 
 ---
 
-# 🗺️ Roadmap
+# 🗺️ Development Roadmap
 
-## ✅ Version 1.0
-- Dashboard
-- Pantry
-- Grocery
-- Recipes
-- Weekly Planner
-- GitHub Integration
+## ✅ Version 1.0 – Foundation
+- Professional Dashboard
+- Pantry Management
+- Grocery Management
+- Recipe Management
+- Weekly Meal Planner
+- GitHub Repository
 
-## 🚧 Version 1.1
-- Smart Pantry
-- Expiry Alerts
-- Pantry Analytics
-- Recipe Suggestions
+---
 
-## 🚧 Version 1.2
-- Smart Grocery Intelligence
-- Automatic Grocery Generation
-- Duplicate Detection
+## 🚧 Version 1.1 – Mobile Experience
+- Responsive Layout
+- Tablet Optimization
+- Touch-Friendly Interface
+- Progressive Web App (PWA)
 
-## 🚧 Version 1.3
+---
+
+## 📋 Version 1.2 – Quality of Life Improvements
+- Export Grocery List
+- Backup & Restore Data
+- Better Search & Filters
+- Performance Optimizations
+
+---
+
+## 💡 Future Enhancements
+- Family Profiles
+- Nutrition Dashboard
+- Pantry Insights
 - AI Kitchen Assistant
-- Meal Recommendations
-- Nutrition Insights
-- Smart Suggestions
 
 ---
 
