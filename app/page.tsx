@@ -109,17 +109,17 @@ export default function Home() {
       <div className="space-y-8">
         
 
-        <section className="grid md:grid-cols-4 gap-5">
+        <section className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-5">
   {stats.map((stat) => {
     const Icon = stat.icon;
 
     return (
       <div
         key={stat.title}
-        className="bg-white rounded-2xl border border-[#EADCC4] p-5 shadow-sm"
+        className="bg-white rounded-2xl border border-[#EADCC4] p-4 sm:p-5 shadow-sm"
       >
         <div
-          className={`w-11 h-11 rounded-xl flex items-center justify-center ${stat.color}`}
+          className={`w-10 h-10 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center ${stat.color}`}
         >
           <Icon size={22} />
         </div>
