@@ -5,6 +5,35 @@ All notable changes to Nair Kitchen will be documented in this file.
 The project follows a simplified semantic versioning approach.
 
 ---
+# v1.1.0 (In Progress)
+
+## Added
+
+### Mobile Experience
+
+- Responsive application layout
+- Mobile navigation drawer
+- Responsive dashboard
+- Mobile Design System folder
+- Initial `MobileListCard` reusable component
+
+---
+
+## Changed
+
+- Dashboard optimized for mobile devices.
+- Header redesigned for smaller screens.
+- Introduced responsive navigation.
+
+---
+
+## Architecture
+
+- Created reusable components/mobile folder.
+- Started Mobile Design System.
+- Introduced reusable component strategy.
+
+---
 
 # v1.0.0-alpha
 
