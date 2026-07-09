@@ -33,7 +33,6 @@ export default function AddIngredientForm({
   const [minQuantity, setMinQuantity] = useState(
     itemToEdit?.minQuantity ? String(itemToEdit.minQuantity) : ""
   );
-  const [expiryDate, setExpiryDate] = useState(itemToEdit?.expiryDate || "");
   const [notes, setNotes] = useState(itemToEdit?.notes || "");
 
   function handleNameChange(value: string) {
@@ -64,7 +63,6 @@ export default function AddIngredientForm({
       unit,
       category,
       minQuantity: minQty,
-      expiryDate,
       notes,
     });
 
@@ -121,13 +119,6 @@ export default function AddIngredientForm({
             value={category}
             onChange={(e) => setCategory(e.target.value)}
             options={[...INGREDIENT_CATEGORIES]}
-          />
-
-          <Input
-            label="Expiry Date"
-            value={expiryDate}
-            onChange={(e) => setExpiryDate(e.target.value)}
-            type="date"
           />
 
           <div>

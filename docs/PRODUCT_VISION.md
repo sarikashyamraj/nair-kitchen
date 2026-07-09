@@ -80,7 +80,7 @@ The application should remain fast, lightweight, and responsive.
 - Ingredient management
 - Quantity tracking
 - Low stock alerts
-- Expiry tracking
+- Low stock management
 
 ---
 

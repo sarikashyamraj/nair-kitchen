@@ -45,28 +45,7 @@ export default function PantryTable({
                 </span>
               </div>
 
-              <div className="grid grid-cols-2 gap-3 mt-5 text-sm">
-                <div className="rounded-xl bg-[#FFF8EC] p-3">
-                  <p className="text-gray-500">Current</p>
-                  <p className="font-semibold text-[#5A4032]">
-                    {item.quantity} {item.unit}
-                  </p>
-                </div>
-
-                <div className="rounded-xl bg-[#FFF8EC] p-3">
-                  <p className="text-gray-500">Minimum</p>
-                  <p className="font-semibold text-[#5A4032]">
-                    {item.minQuantity} {item.unit}
-                  </p>
-                </div>
-
-                <div className="col-span-2 rounded-xl bg-[#FFF8EC] p-3">
-                  <p className="text-gray-500">Expiry</p>
-                  <p className="font-semibold text-[#5A4032]">
-                    {item.expiryDate || "Not set"}
-                  </p>
-                </div>
-              </div>
+              
 
               <div className="flex gap-3 mt-5 border-t border-[#F4E8D0] pt-4">
                 <button
@@ -98,7 +77,7 @@ export default function PantryTable({
               <th className="p-4">Minimum</th>
               <th className="p-4">Category</th>
               <th className="p-4">Status</th>
-              <th className="p-4">Expiry</th>
+              
               <th className="p-4">Action</th>
             </tr>
           </thead>
@@ -113,9 +92,7 @@ export default function PantryTable({
                     {item.name}
                   </td>
 
-                  <td className="p-4 text-[#5A4032]">
-                    {item.quantity} {item.unit}
-                  </td>
+                  
 
                   <td className="p-4 text-[#5A4032]">
                     {item.minQuantity} {item.unit}
@@ -135,9 +112,7 @@ export default function PantryTable({
                     </span>
                   </td>
 
-                  <td className="p-4 text-[#5A4032]">
-                    {item.expiryDate || "—"}
-                  </td>
+                  
 
                   <td className="p-4 flex gap-3">
                     <button

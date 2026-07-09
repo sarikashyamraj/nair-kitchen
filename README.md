@@ -90,7 +90,7 @@ Nair Kitchen helps families efficiently manage recipes, pantry inventory, grocer
 - Category management
 - Quantity tracking
 - Low stock alerts
-- Expiry date tracking
+- Minimum stock tracking
 - Ingredient notes
 - Smart category suggestions
 
