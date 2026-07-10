@@ -120,7 +120,7 @@ export default function RecipeForm({
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl p-6 max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl p-4 sm:p-6 max-h-[90vh] overflow-y-auto mx-3 sm:mx-0">
         <h2 className="text-2xl font-bold text-[#2F6B3C] mb-6">
           {recipe ? "Edit Recipe" : "Add Recipe"}
         </h2>
@@ -183,63 +183,64 @@ export default function RecipeForm({
             <div className="space-y-3">
               {ingredients.map((ingredient, index) => (
                 <div
-                  key={index}
-                  className="grid grid-cols-12 gap-3 items-end"
-                >
-                  <div className="col-span-5">
-                    <Input
-                      label={index === 0 ? "Ingredient" : undefined}
-                      placeholder="Ingredient Name"
-                      value={ingredient.name}
-                      onChange={(e) => {
-                        const updated = [...ingredients];
-                        updated[index].name = e.target.value;
-                        setIngredients(updated);
-                      }}
-                    />
-                  </div>
+  key={index}
+  className="grid grid-cols-12 gap-3 items-end"
+>
+  <div className="col-span-12 sm:col-span-5">
+    <Input
+      label={index === 0 ? "Ingredient" : undefined}
+      placeholder="Ingredient Name"
+      value={ingredient.name}
+      onChange={(e) => {
+        const updated = [...ingredients];
+        updated[index].name = e.target.value;
+        setIngredients(updated);
+      }}
+    />
+  </div>
 
-                  <div className="col-span-2">
-                    <Input
-                      label={index === 0 ? "Qty" : undefined}
-                      type="number"
-                      value={ingredient.quantity}
-                      onChange={(e) => {
-                        const updated = [...ingredients];
-                        updated[index].quantity = Number(e.target.value);
-                        setIngredients(updated);
-                      }}
-                    />
-                  </div>
+  <div className="col-span-4 sm:col-span-2">
+    <Input
+      label={index === 0 ? "Qty" : undefined}
+      type="number"
+      value={ingredient.quantity}
+      onChange={(e) => {
+        const updated = [...ingredients];
+        updated[index].quantity = Number(e.target.value);
+        setIngredients(updated);
+      }}
+    />
+  </div>
 
-                  <div className="col-span-3">
-                    <Select
-                      label={index === 0 ? "Unit" : undefined}
-                      value={ingredient.unit}
-                      onChange={(e) => {
-                        const updated = [...ingredients];
-                        updated[index].unit = e.target.value;
-                        setIngredients(updated);
-                      }}
-                      options={["", ...UNITS]}
-                    />
-                  </div>
+  <div className="col-span-5 sm:col-span-3">
+    <Select
+      label={index === 0 ? "Unit" : undefined}
+      value={ingredient.unit}
+      onChange={(e) => {
+        const updated = [...ingredients];
+        updated[index].unit = e.target.value;
+        setIngredients(updated);
+      }}
+      options={["", ...UNITS]}
+    />
+  </div>
 
-                  <div className="col-span-2">
-                    <Button
-                      type="button"
-                      variant="danger"
-                      className="w-full"
-                      onClick={() =>
-                        setIngredients(
-                          ingredients.filter((_, i) => i !== index)
-                        )
-                      }
-                    >
-                      Remove
-                    </Button>
-                  </div>
-                </div>
+  <div className="col-span-3 sm:col-span-2">
+    <Button
+      type="button"
+      variant="danger"
+      className="w-full px-2"
+      onClick={() =>
+        setIngredients(
+          ingredients.filter((_, i) => i !== index)
+        )
+      }
+    >
+      <span className="sm:hidden">🗑</span>
+      <span className="hidden sm:inline">Remove</span>
+    </Button>
+  </div>
+</div>
               ))}
 
               <Button
