@@ -6,27 +6,39 @@ type PantryAlertsProps = {
 
 export default function PantryAlerts({ items }: PantryAlertsProps) {
   const lowStockItems = items.filter((item) => {
-    const minimum = item.minQuantity ?? item.minQuantity ?? 1;
+    const minimum = item.minQuantity ?? 1;
     return item.quantity <= minimum;
   });
 
   if (lowStockItems.length === 0) {
     return (
-      <div className="mb-6 rounded-2xl bg-green-50 border border-green-200 p-4 text-green-700">
-        ✅ Pantry looks good. No low stock items.
+      <div className="mb-4 rounded-xl border border-green-200 bg-green-50 px-4 py-3">
+        <p className="font-semibold text-green-700">
+          ✅ Pantry is well stocked
+        </p>
       </div>
     );
   }
 
-  return (
-    <div className="mb-6 rounded-2xl bg-yellow-50 border border-yellow-200 p-4">
-      <h3 className="font-bold text-yellow-800">
-        ⚠️ Low Stock Alert
-      </h3>
+  const previewItems = lowStockItems.slice(0, 3);
+  const remaining = lowStockItems.length - previewItems.length;
 
-      <p className="mt-2 text-yellow-700">
-        You are running low on:{" "}
-        {lowStockItems.map((item) => item.name).join(", ")}
+  return (
+    <div className="mb-4 rounded-xl border border-yellow-200 bg-yellow-50 px-4 py-3">
+      <div className="flex items-center justify-between">
+        <h3 className="font-semibold text-yellow-800">
+          ⚠️ Running Low
+        </h3>
+
+        <span className="rounded-full bg-yellow-200 px-2 py-1 text-xs font-semibold text-yellow-800">
+          {lowStockItems.length}
+        </span>
+      </div>
+
+      <p className="mt-2 text-sm text-yellow-700">
+        {previewItems.map((item) => item.name).join(" • ")}
+
+        {remaining > 0 && ` • +${remaining} more`}
       </p>
     </div>
   );

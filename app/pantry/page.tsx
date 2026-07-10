@@ -9,8 +9,24 @@ import PantryAlerts from "../../components/pantry/PantryAlerts";
 import PantryTable from "../../components/pantry/PantryTable";
 import AddIngredientForm from "../../components/pantry/AddIngredientForm";
 
+import MobilePageHeader from "../../components/mobile/MobilePageHeader";
+import MobileSearchBar from "../../components/mobile/MobileSearchBar";
+import MobileFAB from "../../components/mobile/MobileFAB";
+
 import { PantryItem } from "../../types/pantry";
 import { useKitchen } from "../../context/KitchenContext";
+
+const categories = [
+  "All",
+  "Grains",
+  "Dairy",
+  "Vegetables",
+  "Meat",
+  "Seafood",
+  "Spices",
+  "Snacks",
+  "Household",
+];
 
 export default function PantryPage() {
   const { pantry, setPantry } = useKitchen();
@@ -20,20 +36,48 @@ export default function PantryPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
 
+  function openAddForm() {
+    setEditingItem(null);
+    setIsFormOpen(true);
+  }
+
   function handleSave(item: PantryItem) {
-    if (editingItem) {
+  if (editingItem) {
+    setPantry(
+      pantry.map((pantryItem) =>
+        pantryItem.id === editingItem.id ? item : pantryItem
+      )
+    );
+  } else {
+    const existingItem = pantry.find(
+      (pantryItem) =>
+        pantryItem.name.trim().toLowerCase() ===
+item.name.trim().toLowerCase() &&
+        pantryItem.unit === item.unit &&
+        pantryItem.category === item.category
+    );
+
+    if (existingItem) {
       setPantry(
         pantry.map((pantryItem) =>
-          pantryItem.id === editingItem.id ? item : pantryItem
+          pantryItem.id === existingItem.id
+            ? {
+                ...pantryItem,
+                quantity: pantryItem.quantity + item.quantity,
+                minQuantity: item.minQuantity,
+                notes: item.notes || pantryItem.notes,
+              }
+            : pantryItem
         )
       );
     } else {
       setPantry([...pantry, item]);
     }
-
-    setEditingItem(null);
-    setIsFormOpen(false);
   }
+
+  setEditingItem(null);
+  setIsFormOpen(false);
+}
 
   const filteredItems = pantry.filter((item) => {
     const matchesSearch = item.name
@@ -52,14 +96,25 @@ export default function PantryPage() {
 
   return (
     <AppLayout>
-      <PantryHeader
-        onAddItem={() => {
-          setEditingItem(null);
-          setIsFormOpen(true);
-        }}
+      <MobilePageHeader
+        title="Pantry"
+        subtitle={`${pantry.length} Ingredients`}
       />
 
-      <div className="mb-6 flex gap-4">
+      <div className="hidden md:block">
+        <PantryHeader onAddItem={openAddForm} />
+      </div>
+
+      <MobileSearchBar
+        searchValue={searchTerm}
+        onSearchChange={setSearchTerm}
+        categoryValue={selectedCategory}
+        categories={categories}
+        onCategoryChange={setSelectedCategory}
+        placeholder="Search ingredients..."
+      />
+
+      <div className="hidden md:flex mb-6 gap-4">
         <input
           type="text"
           placeholder="🔍 Search ingredients..."
@@ -73,15 +128,9 @@ export default function PantryPage() {
           onChange={(e) => setSelectedCategory(e.target.value)}
           className="rounded-xl border border-gray-300 p-3"
         >
-          <option>All</option>
-          <option>Grains</option>
-          <option>Dairy</option>
-          <option>Vegetables</option>
-          <option>Meat</option>
-          <option>Seafood</option>
-          <option>Spices</option>
-          <option>Snacks</option>
-          <option>Household</option>
+          {categories.map((category) => (
+            <option key={category}>{category}</option>
+          ))}
         </select>
       </div>
 
@@ -99,10 +148,10 @@ export default function PantryPage() {
           setEditingItem(item);
           setIsFormOpen(true);
         }}
-        onDelete={(id) =>
-          setPantry(pantry.filter((item) => item.id !== id))
-        }
+        onDelete={(id) => setPantry(pantry.filter((item) => item.id !== id))}
       />
+
+      <MobileFAB label="Add" onClick={openAddForm} />
 
       {isFormOpen && (
         <AddIngredientForm
