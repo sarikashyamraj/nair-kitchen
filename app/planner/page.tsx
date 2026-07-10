@@ -13,7 +13,7 @@ import { useKitchen } from "../../context/KitchenContext";
 import { useToast } from "../../context/ToastContext";
 import { aggregateIngredients } from "../../services/ingredientAggregator";
 import { generateGroceryFromRecipe } from "../../services/groceryEngine";
-
+import MobilePageHeader from "../../components/mobile/MobilePageHeader";
 type MealSlot =
   | "morningDrink"
   | "breakfast"
@@ -121,6 +121,16 @@ export default function PlannerPage() {
   return (
     <AppLayout>
       <div className="space-y-6">
+        {/* Sticky Mobile Header */}
+<div className="sticky top-0 z-30 -mx-4 bg-[#FFFDF8] px-4 pb-3 pt-1 md:hidden">
+  <MobilePageHeader
+    title="Weekly Planner"
+    subtitle="Plan your family meals for the week"
+  />
+</div>
+
+{/* Desktop Header */}
+<PlannerHeader />
         <PlannerHeader />
 
         <PlannerTable

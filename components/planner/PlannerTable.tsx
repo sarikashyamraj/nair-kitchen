@@ -1,6 +1,8 @@
 import { MealPlan } from "../../types/planner";
 import { Recipe } from "../../types/recipe";
-import PlannerRow from "./PlannerRow";
+
+import PlannerDesktopTable from "./PlannerDesktopTable";
+import PlannerMobileCards from "./PlannerMobileCards";
 
 type MealSlot =
   | "morningDrink"
@@ -25,30 +27,18 @@ export default function PlannerTable({
   onChange,
 }: PlannerTableProps) {
   return (
-    <div className="bg-white rounded-2xl shadow-md overflow-x-auto">
-      <table className="w-full text-left">
-        <thead className="bg-[#F4E8D0] text-[#5A4032]">
-          <tr>
-            <th className="p-4">Day</th>
-            <th className="p-4">Morning Drink</th>
-            <th className="p-4">Breakfast</th>
-            <th className="p-4">Lunch</th>
-            <th className="p-4">Snack</th>
-            <th className="p-4">Dinner</th>
-          </tr>
-        </thead>
+    <>
+      <PlannerMobileCards
+        plans={plans}
+        recipes={recipes}
+        onChange={onChange}
+      />
 
-        <tbody>
-          {plans.map((plan) => (
-            <PlannerRow
-              key={plan.id}
-              plan={plan}
-              recipes={recipes}
-              onChange={onChange}
-            />
-          ))}
-        </tbody>
-      </table>
-    </div>
+      <PlannerDesktopTable
+        plans={plans}
+        recipes={recipes}
+        onChange={onChange}
+      />
+    </>
   );
 }
