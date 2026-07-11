@@ -14,13 +14,14 @@ export default function AppLayout({ children }: AppLayoutProps) {
           <Sidebar />
         </div>
 
-        <main className="flex-1 min-w-0">
-          <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 sm:py-6 lg:p-8">
-            <MobileMenu />
+        <main className="min-w-0 flex-1">
+          <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 sm:py-6 lg:p-8">
+            <div className="sticky top-0 z-40 bg-[#FFFDF8] pb-3">
+              <MobileMenu />
+              <TopHeader />
+            </div>
 
-<TopHeader />
-
-{children}
+            {children}
           </div>
         </main>
       </div>
