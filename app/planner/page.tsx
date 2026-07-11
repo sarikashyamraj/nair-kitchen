@@ -119,31 +119,30 @@ export default function PlannerPage() {
   }
 
   return (
-    <AppLayout>
-      <div className="space-y-6">
-        {/* Sticky Mobile Header */}
-<div className="sticky top-0 z-30 -mx-4 bg-[#FFFDF8] px-4 pb-3 pt-1 md:hidden">
-  <MobilePageHeader
-    title="Weekly Planner"
-    subtitle="Plan your family meals for the week"
-  />
-</div>
-
-{/* Desktop Header */}
-<PlannerHeader />
-        <PlannerHeader />
-
-        <PlannerTable
-          plans={planner}
-          recipes={recipes}
-          onChange={handleMealChange}
-        />
-
-        <PlannerActions
-          onSave={handleSave}
-          onGenerateGrocery={handleGenerateGrocery}
+  <AppLayout>
+    <div className="space-y-6 pb-24 md:pb-0">
+      {/* Sticky Mobile Header */}
+      <div className="sticky top-0 z-30 -mx-4 bg-[#FFFDF8] px-4 pb-3 pt-1 md:hidden">
+        <MobilePageHeader
+          title="Weekly Planner"
+          subtitle="Plan your family meals for the week"
         />
       </div>
-    </AppLayout>
-  );
+
+      {/* Desktop Header */}
+      <PlannerHeader />
+
+      <PlannerTable
+        plans={planner}
+        recipes={recipes}
+        onChange={handleMealChange}
+      />
+
+      <PlannerActions
+        onSave={handleSave}
+        onGenerateGrocery={handleGenerateGrocery}
+      />
+    </div>
+  </AppLayout>
+);
 }
