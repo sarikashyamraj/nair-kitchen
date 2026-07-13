@@ -5,16 +5,25 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { Bell } from "lucide-react";
 
-import { UserProfile } from "../../types/profile";
-import { defaultUserProfile } from "../../data/defaultProfile";
-import { loadUserProfile } from "../../lib/profileStorage";
 import { useKitchen } from "../../context/KitchenContext";
+
+import { UserProfile } from "../../types/profile";
+import { UserPreferences } from "../../types/preferences";
+
+import { defaultUserProfile } from "../../data/defaultProfile";
+import { defaultPreferences } from "../../data/defaultPreferences";
+
+import { loadUserProfile } from "../../lib/profileStorage";
+import { loadPreferences } from "../../lib/preferencesStorage";
 
 export default function TopHeader() {
   const { pantry, shopping, planner } = useKitchen();
 
   const [profile, setProfile] =
     useState<UserProfile>(defaultUserProfile);
+
+  const [preferences, setPreferences] =
+    useState<UserPreferences>(defaultPreferences);
 
   const [isNotificationsOpen, setIsNotificationsOpen] =
     useState(false);
@@ -37,6 +46,26 @@ export default function TopHeader() {
       window.removeEventListener(
         "profile-updated",
         refreshProfile
+      );
+    };
+  }, []);
+
+  useEffect(() => {
+    function refreshPreferences() {
+      setPreferences(loadPreferences());
+    }
+
+    refreshPreferences();
+
+    window.addEventListener(
+      "preferences-updated",
+      refreshPreferences
+    );
+
+    return () => {
+      window.removeEventListener(
+        "preferences-updated",
+        refreshPreferences
       );
     };
   }, []);
@@ -114,34 +143,50 @@ export default function TopHeader() {
   const notifications = [
     {
       id: "pantry",
-      show: lowStockItems.length > 0,
+      show:
+        preferences.lowStockAlerts &&
+        lowStockItems.length > 0,
+
       title: `${lowStockItems.length} pantry item${
         lowStockItems.length === 1 ? " is" : "s are"
       } running low`,
+
       description: lowStockItems
         .slice(0, 3)
         .map((item) => item.name)
         .join(", "),
+
       href: "/pantry",
       emoji: "🥫",
     },
     {
       id: "grocery",
-      show: pendingGroceryItems.length > 0,
+      show:
+        preferences.groceryReminders &&
+        pendingGroceryItems.length > 0,
+
       title: `${pendingGroceryItems.length} grocery item${
         pendingGroceryItems.length === 1 ? "" : "s"
       } pending`,
-      description: "Open your grocery list to continue shopping.",
+
+      description:
+        "Open your grocery list to continue shopping.",
+
       href: "/grocery",
       emoji: "🛒",
     },
     {
       id: "planner",
-      show: unplannedMealCount > 0,
+      show:
+        preferences.mealReminders &&
+        unplannedMealCount > 0,
+
       title: `${unplannedMealCount} meal${
         unplannedMealCount === 1 ? "" : "s"
       } not planned today`,
+
       description: `Complete your ${currentDay} meal plan.`,
+
       href: "/planner",
       emoji: "📅",
     },
@@ -217,7 +262,7 @@ export default function TopHeader() {
                     </p>
 
                     <p className="mt-1 text-sm text-gray-500">
-                      No kitchen alerts right now.
+                      No enabled kitchen alerts right now.
                     </p>
                   </div>
                 ) : (

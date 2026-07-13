@@ -1,19 +1,99 @@
 "use client";
 
+import Link from "next/link";
+import { useEffect, useState } from "react";
+
 import AppLayout from "../components/AppLayout";
 import QuickActions from "../components/dashboard/QuickActions";
 import { useKitchen } from "../context/KitchenContext";
+import {
+  loadGroceryTransactions,
+  loadMonthlyBudgets,
+} from "../lib/budgetStorage";
+
+import { loadPreferences } from "../lib/preferencesStorage";
 
 import {
   BookOpen,
   Package,
   ShoppingCart,
   HeartPulse,
+  WalletCards,
 } from "lucide-react";
+function getMonthKey(date: Date) {
+  return `${date.getFullYear()}-${String(
+    date.getMonth() + 1
+  ).padStart(2, "0")}`;
+}
 
+function formatCurrency(
+  amount: number,
+  currency: string
+) {
+  return new Intl.NumberFormat("en-AE", {
+    style: "currency",
+    currency,
+    minimumFractionDigits: 2,
+  }).format(amount);
+}
 export default function Home() {
   const { pantry, shopping, planner, recipes } = useKitchen();
+const [monthlyBudget, setMonthlyBudget] = useState(0);
+const [monthlySpent, setMonthlySpent] = useState(0);
+const [budgetCurrency, setBudgetCurrency] = useState("AED");
+useEffect(() => {
+  function refreshBudgetSummary() {
+    const currentMonth = getMonthKey(new Date());
+    const preferences = loadPreferences();
 
+    const budgets = loadMonthlyBudgets();
+    const transactions = loadGroceryTransactions();
+
+    const currentBudget = budgets.find(
+      (budget) => budget.month === currentMonth
+    );
+
+    const currentMonthSpent = transactions
+      .filter((transaction) =>
+        transaction.date.startsWith(currentMonth)
+      )
+      .reduce(
+        (total, transaction) =>
+          total + transaction.amount,
+        0
+      );
+
+    setMonthlyBudget(currentBudget?.amount || 0);
+    setMonthlySpent(currentMonthSpent);
+    setBudgetCurrency(
+      currentBudget?.currency || preferences.currency
+    );
+  }
+
+  refreshBudgetSummary();
+
+  window.addEventListener(
+    "budget-updated",
+    refreshBudgetSummary
+  );
+
+  window.addEventListener(
+    "preferences-updated",
+    refreshBudgetSummary
+  );
+
+  return () => {
+    window.removeEventListener(
+      "budget-updated",
+      refreshBudgetSummary
+    );
+
+    window.removeEventListener(
+      "preferences-updated",
+      refreshBudgetSummary
+    );
+  };
+}, []);
   const currentDay = new Date().toLocaleDateString("en-US", {
     weekday: "long",
   });
@@ -50,7 +130,19 @@ const totalPantryItems = pantry.length;
   const groceryRemaining = shopping.filter(
     (item) => !item.purchased
   ).length;
+const budgetRemaining = monthlyBudget - monthlySpent;
 
+const budgetUsedPercentage =
+  monthlyBudget > 0
+    ? Math.round(
+        (monthlySpent / monthlyBudget) * 100
+      )
+    : 0;
+
+const progressWidth = Math.min(
+  budgetUsedPercentage,
+  100
+);
   const stats = [
     {
       title: "Pantry Items",
@@ -217,6 +309,143 @@ const totalPantryItems = pantry.length;
               : `${lowStockItems} item(s) are running low.`}
           </p>
  </div>
+            </section>
+
+      {/* Monthly Budget */}
+      <section className="rounded-2xl border border-[#EADCC4] bg-white p-4 shadow-sm sm:p-6">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-purple-100 text-purple-700">
+              <WalletCards size={22} />
+            </div>
+
+            <div>
+              <h2 className="text-xl font-bold text-[#2F6B3C] sm:text-2xl">
+                Monthly Grocery Budget
+              </h2>
+
+              <p className="mt-1 text-sm text-gray-500">
+                Current month spending overview
+              </p>
+            </div>
+          </div>
+
+          <Link
+            href="/budget"
+            className="shrink-0 rounded-xl border border-[#EADCC4] bg-[#FFF8EC] px-3 py-2 text-sm font-semibold text-[#5A4032] transition hover:bg-[#F4E8D0]"
+          >
+            View Budget
+          </Link>
+        </div>
+
+        {monthlyBudget === 0 ? (
+          <div className="mt-5 rounded-xl border border-dashed border-[#EADCC4] bg-[#FFFCF8] p-5 text-center">
+            <p className="font-semibold text-[#2F6B3C]">
+              No monthly budget set
+            </p>
+
+            <p className="mt-1 text-sm text-gray-500">
+              Set a grocery budget to start tracking your monthly spending.
+            </p>
+
+            <Link
+              href="/budget"
+              className="mt-4 inline-flex rounded-xl bg-[#2F6B3C] px-4 py-2 text-sm font-semibold text-white"
+            >
+              Set Budget
+            </Link>
+          </div>
+        ) : (
+          <>
+            <div className="mt-5 grid grid-cols-2 gap-3 md:grid-cols-3">
+              <div className="rounded-xl bg-[#FFF8EC] p-4">
+                <p className="text-xs text-gray-500">
+                  Budget
+                </p>
+
+                <p className="mt-1 text-lg font-bold text-[#5A4032]">
+                  {formatCurrency(
+                    monthlyBudget,
+                    budgetCurrency
+                  )}
+                </p>
+              </div>
+
+              <div className="rounded-xl bg-blue-50 p-4">
+                <p className="text-xs text-gray-500">
+                  Spent
+                </p>
+
+                <p className="mt-1 text-lg font-bold text-blue-700">
+                  {formatCurrency(
+                    monthlySpent,
+                    budgetCurrency
+                  )}
+                </p>
+              </div>
+
+              <div className="col-span-2 rounded-xl bg-green-50 p-4 md:col-span-1">
+                <p className="text-xs text-gray-500">
+                  {budgetRemaining < 0
+                    ? "Over Budget"
+                    : "Remaining"}
+                </p>
+
+                <p
+                  className={`mt-1 text-lg font-bold ${
+                    budgetRemaining < 0
+                      ? "text-red-600"
+                      : "text-green-700"
+                  }`}
+                >
+                  {formatCurrency(
+                    Math.abs(budgetRemaining),
+                    budgetCurrency
+                  )}
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-5">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-sm font-medium text-[#5A4032]">
+                  Budget used
+                </p>
+
+                <p className="text-sm font-bold text-[#2F6B3C]">
+                  {budgetUsedPercentage}%
+                </p>
+              </div>
+
+              <div className="mt-2 h-3 w-full overflow-hidden rounded-full bg-[#F4E8D0]">
+                <div
+                  className={`h-full rounded-full transition-all ${
+                    budgetRemaining < 0
+                      ? "bg-red-500"
+                      : budgetUsedPercentage >= 80
+                      ? "bg-yellow-500"
+                      : "bg-[#2F6B3C]"
+                  }`}
+                  style={{
+                    width: `${progressWidth}%`,
+                  }}
+                />
+              </div>
+
+              <p className="mt-3 text-sm text-gray-500">
+                {budgetRemaining < 0
+                  ? `You have exceeded this month’s budget by ${formatCurrency(
+                      Math.abs(budgetRemaining),
+                      budgetCurrency
+                    )}.`
+                  : `${formatCurrency(
+                      budgetRemaining,
+                      budgetCurrency
+                    )} is still available this month.`}
+              </p>
+            </div>
+          </>
+        )}
       </section>
 
       {/* Quick Actions */}
