@@ -1,7 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { Menu, X, Home, CalendarDays, Package, BookOpen, ShoppingCart } from "lucide-react";
+import {
+  Menu,
+  X,
+  Home,
+  CalendarDays,
+  Package,
+  BookOpen,
+  ShoppingCart,
+  WalletCards,
+  Settings,
+} from "lucide-react";
 import { useState } from "react";
 import { usePathname } from "next/navigation";
 
@@ -11,6 +21,8 @@ const menuItems = [
   { name: "Pantry", href: "/pantry", icon: Package },
   { name: "Recipes", href: "/recipes", icon: BookOpen },
   { name: "Grocery", href: "/grocery", icon: ShoppingCart },
+  { name: "Settings", href: "/settings", icon: Settings },
+  { name: "Budget", href: "/budget", icon: WalletCards },
 ];
 
 export default function MobileMenu() {

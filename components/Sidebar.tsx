@@ -8,6 +8,8 @@ import {
   Package,
   BookOpen,
   ShoppingCart,
+  WalletCards,
+  Settings,
   ChefHat,
   Lightbulb,
 } from "lucide-react";
@@ -38,6 +40,16 @@ const menuItems = [
     icon: ShoppingCart,
     label: "Grocery",
   },
+  {
+  href: "/budget",
+  icon: WalletCards,
+  label: "Budget",
+},
+{
+  href: "/settings",
+  icon: Settings,
+  label: "Settings",
+},
 ];
 
 export default function Sidebar() {
