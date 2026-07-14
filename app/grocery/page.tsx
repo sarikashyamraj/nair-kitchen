@@ -88,17 +88,33 @@ export default function GroceryPage() {
   );
 
   useEffect(() => {
+  function refreshPreferences() {
     const preferences = loadPreferences();
     setCurrency(preferences.currency);
+  }
 
-    const savedStore = localStorage.getItem(
-      "nair-kitchen-last-store"
+  refreshPreferences();
+
+  const savedStore = localStorage.getItem(
+    "nair-kitchen-last-store"
+  );
+
+  if (savedStore) {
+    setLastStore(savedStore);
+  }
+
+  window.addEventListener(
+    "preferences-updated",
+    refreshPreferences
+  );
+
+  return () => {
+    window.removeEventListener(
+      "preferences-updated",
+      refreshPreferences
     );
-
-    if (savedStore) {
-      setLastStore(savedStore);
-    }
-  }, []);
+  };
+}, []);
 
   function showToast(message: string) {
     setToastMessage(message);

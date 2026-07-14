@@ -15,7 +15,7 @@ import { defaultPreferences } from "../../data/defaultPreferences";
 
 import { loadUserProfile } from "../../lib/profileStorage";
 import { loadPreferences } from "../../lib/preferencesStorage";
-
+import { formatDateByPreference } from "../../lib/dateFormatter";
 export default function TopHeader() {
   const { pantry, shopping, planner } = useKitchen();
 
@@ -105,12 +105,14 @@ export default function TopHeader() {
       ? "Good Afternoon"
       : "Good Evening";
 
-  const formattedDate = now.toLocaleDateString("en-AE", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
+  const weekday = now.toLocaleDateString("en-US", {
+  weekday: "long",
+});
+
+const formattedDate = `${weekday}, ${formatDateByPreference(
+  now,
+  preferences.dateFormat
+)}`;
 
   const currentDay = now.toLocaleDateString("en-US", {
     weekday: "long",

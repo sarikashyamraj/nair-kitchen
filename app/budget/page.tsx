@@ -18,6 +18,7 @@ import {
   saveMonthlyBudgets,
 } from "../../lib/budgetStorage";
 import { loadPreferences } from "../../lib/preferencesStorage";
+import { formatDateByPreference } from "../../lib/dateFormatter";
 function getMonthKey(date: Date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(
     2,
@@ -67,15 +68,39 @@ const [transactionToDelete, setTransactionToDelete] =
 
   const [budgetAmount, setBudgetAmount] = useState("");
 const [currency, setCurrency] = useState("AED");
+
+const [dateFormat, setDateFormat] = useState<
+  "DD/MM/YYYY" | "MM/DD/YYYY" | "YYYY-MM-DD"
+>("DD/MM/YYYY");
+
 const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
-  const preferences = loadPreferences();
+  function refreshPreferences() {
+    const preferences = loadPreferences();
 
-  setCurrency(preferences.currency);
+    setCurrency(preferences.currency);
+    setDateFormat(preferences.dateFormat);
+  }
+
+  refreshPreferences();
+
   setBudgets(loadMonthlyBudgets());
   setTransactions(loadGroceryTransactions());
+
   setIsLoaded(true);
+
+  window.addEventListener(
+    "preferences-updated",
+    refreshPreferences
+  );
+
+  return () => {
+    window.removeEventListener(
+      "preferences-updated",
+      refreshPreferences
+    );
+  };
 }, []);
   useEffect(() => {
     if (isLoaded) {
@@ -388,13 +413,10 @@ return (
                       </h3>
 
                       <p className="mt-1 text-sm text-gray-500">
-  {new Date(
-    `${transaction.date}T00:00:00`
-  ).toLocaleDateString("en-AE", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  })}
+  {formatDateByPreference(
+  transaction.date,
+  dateFormat
+)}
 
   {transaction.store && (
     <>
