@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-
+import { countries } from "../../data/countries";
 import AppLayout from "../../components/AppLayout";
-
+import CurrencyPicker from "../../components/settings/CurrencyPicker";
 import {
   CurrencyCode,
   DateFormat,
@@ -19,36 +19,9 @@ import {
   savePreferences,
 } from "../../lib/preferencesStorage";
 
-const countries = [
-  "United Arab Emirates",
-  "India",
-  "United States",
-  "United Kingdom",
-  "Canada",
-  "Australia",
-  "Singapore",
-  "Saudi Arabia",
-  "Qatar",
-  "Oman",
-  "Kuwait",
-  "Japan",
-];
 
-const currencies: CurrencyCode[] = [
-  "AED",
-  "INR",
-  "USD",
-  "GBP",
-  "EUR",
-  "AUD",
-  "CAD",
-  "SGD",
-  "SAR",
-  "QAR",
-  "OMR",
-  "KWD",
-  "JPY",
-];
+
+
 
 const dateFormats: DateFormat[] = [
   "DD/MM/YYYY",
@@ -122,147 +95,143 @@ export default function SettingsPage() {
         </section>
 
         {/* Regional Settings */}
-        <section className="rounded-2xl border border-[#EADCC4] bg-white p-5 shadow-sm sm:p-6">
-          <div>
-            <h2 className="text-xl font-bold text-[#2F6B3C]">
-              🌍 Regional
-            </h2>
+<section className="rounded-2xl border border-[#EADCC4] bg-white p-5 shadow-sm sm:p-6">
+  <div>
+    <h2 className="text-xl font-bold text-[#2F6B3C]">
+      🌍 Regional
+    </h2>
 
-            <p className="mt-1 text-sm text-gray-500">
-              Control currency, date display, and weekly planning.
-            </p>
-          </div>
+    <p className="mt-1 text-sm text-gray-500">
+      Control currency, date display, and weekly planning.
+    </p>
+  </div>
 
-          <div className="mt-5 divide-y divide-[#F4E8D0]">
-            <div className="flex flex-col gap-2 py-4 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <p className="font-semibold text-[#5A4032]">
-                  Country
-                </p>
+  <div className="mt-5 divide-y divide-[#F4E8D0]">
+    {/* Country */}
+    <div className="flex flex-col gap-2 py-4 sm:flex-row sm:items-center sm:justify-between">
+      <div>
+        <p className="font-semibold text-[#5A4032]">
+          Country
+        </p>
 
-                <p className="mt-1 text-sm text-gray-500">
-                  Used for regional defaults.
-                </p>
-              </div>
+        <p className="mt-1 text-sm text-gray-500">
+          Used for regional defaults.
+        </p>
+      </div>
 
-              <select
-                value={preferences.country}
-                onChange={(event) =>
-                  updatePreference(
-                    "country",
-                    event.target.value
-                  )
-                }
-                className="w-full rounded-xl border border-[#EADCC4] bg-white px-4 py-3 outline-none focus:border-[#2F6B3C] sm:w-64"
-              >
-                {countries.map((country) => (
-                  <option
-                    key={country}
-                    value={country}
-                  >
-                    {country}
-                  </option>
-                ))}
-              </select>
-            </div>
+      <select
+        value={preferences.country}
+        onChange={(event) =>
+          updatePreference(
+            "country",
+            event.target.value
+          )
+        }
+        className="w-full rounded-xl border border-[#EADCC4] bg-white px-4 py-3 outline-none focus:border-[#2F6B3C] sm:w-64"
+      >
+        {countries.map((country) => (
+          <option
+            key={country}
+            value={country}
+          >
+            {country}
+          </option>
+        ))}
+      </select>
+    </div>
 
-            <div className="flex flex-col gap-2 py-4 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <p className="font-semibold text-[#5A4032]">
-                  Currency
-                </p>
+    {/* Currency */}
+    <div className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between">
+      <div>
+        <p className="font-semibold text-[#5A4032]">
+          Currency
+        </p>
 
-                <p className="mt-1 text-sm text-gray-500">
-                  Used throughout Budget and Grocery.
-                </p>
-              </div>
+        <p className="mt-1 text-sm text-gray-500">
+          Used throughout Budget and Grocery.
+        </p>
+      </div>
 
-              <select
-                value={preferences.currency}
-                onChange={(event) =>
-                  updatePreference(
-                    "currency",
-                    event.target.value as CurrencyCode
-                  )
-                }
-                className="w-full rounded-xl border border-[#EADCC4] bg-white px-4 py-3 outline-none focus:border-[#2F6B3C] sm:w-64"
-              >
-                {currencies.map((currency) => (
-                  <option
-                    key={currency}
-                    value={currency}
-                  >
-                    {currency}
-                  </option>
-                ))}
-              </select>
-            </div>
+      <div className="w-full sm:w-80">
+        <CurrencyPicker
+          value={preferences.currency}
+          onChange={(currencyCode) =>
+            updatePreference(
+              "currency",
+              currencyCode as CurrencyCode
+            )
+          }
+        />
+      </div>
+    </div>
 
-            <div className="flex flex-col gap-2 py-4 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <p className="font-semibold text-[#5A4032]">
-                  Date Format
-                </p>
+    {/* Date Format */}
+    <div className="flex flex-col gap-2 py-4 sm:flex-row sm:items-center sm:justify-between">
+      <div>
+        <p className="font-semibold text-[#5A4032]">
+          Date Format
+        </p>
 
-                <p className="mt-1 text-sm text-gray-500">
-                  Controls how dates appear in the app.
-                </p>
-              </div>
+        <p className="mt-1 text-sm text-gray-500">
+          Controls how dates appear in the app.
+        </p>
+      </div>
 
-              <select
-                value={preferences.dateFormat}
-                onChange={(event) =>
-                  updatePreference(
-                    "dateFormat",
-                    event.target.value as DateFormat
-                  )
-                }
-                className="w-full rounded-xl border border-[#EADCC4] bg-white px-4 py-3 outline-none focus:border-[#2F6B3C] sm:w-64"
-              >
-                {dateFormats.map((format) => (
-                  <option
-                    key={format}
-                    value={format}
-                  >
-                    {format}
-                  </option>
-                ))}
-              </select>
-            </div>
+      <select
+        value={preferences.dateFormat}
+        onChange={(event) =>
+          updatePreference(
+            "dateFormat",
+            event.target.value as DateFormat
+          )
+        }
+        className="w-full rounded-xl border border-[#EADCC4] bg-white px-4 py-3 outline-none focus:border-[#2F6B3C] sm:w-64"
+      >
+        {dateFormats.map((format) => (
+          <option
+            key={format}
+            value={format}
+          >
+            {format}
+          </option>
+        ))}
+      </select>
+    </div>
 
-            <div className="flex flex-col gap-2 py-4 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <p className="font-semibold text-[#5A4032]">
-                  Week Starts On
-                </p>
+    {/* Week Starts On */}
+    <div className="flex flex-col gap-2 py-4 sm:flex-row sm:items-center sm:justify-between">
+      <div>
+        <p className="font-semibold text-[#5A4032]">
+          Week Starts On
+        </p>
 
-                <p className="mt-1 text-sm text-gray-500">
-                  Used by the Meal Planner.
-                </p>
-              </div>
+        <p className="mt-1 text-sm text-gray-500">
+          Used by the Meal Planner.
+        </p>
+      </div>
 
-              <select
-                value={preferences.weekStartsOn}
-                onChange={(event) =>
-                  updatePreference(
-                    "weekStartsOn",
-                    event.target.value as WeekStartDay
-                  )
-                }
-                className="w-full rounded-xl border border-[#EADCC4] bg-white px-4 py-3 outline-none focus:border-[#2F6B3C] sm:w-64"
-              >
-                {weekStartOptions.map((day) => (
-                  <option
-                    key={day}
-                    value={day}
-                  >
-                    {day}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-        </section>
+      <select
+        value={preferences.weekStartsOn}
+        onChange={(event) =>
+          updatePreference(
+            "weekStartsOn",
+            event.target.value as WeekStartDay
+          )
+        }
+        className="w-full rounded-xl border border-[#EADCC4] bg-white px-4 py-3 outline-none focus:border-[#2F6B3C] sm:w-64"
+      >
+        {weekStartOptions.map((day) => (
+          <option
+            key={day}
+            value={day}
+          >
+            {day}
+          </option>
+        ))}
+      </select>
+    </div>
+  </div>
+</section>
 
         {/* Measurement */}
         <section className="rounded-2xl border border-[#EADCC4] bg-white p-5 shadow-sm sm:p-6">

@@ -64,10 +64,8 @@ useEffect(() => {
       );
 
     setMonthlyBudget(currentBudget?.amount || 0);
-    setMonthlySpent(currentMonthSpent);
-    setBudgetCurrency(
-      currentBudget?.currency || preferences.currency
-    );
+setMonthlySpent(currentMonthSpent);
+setBudgetCurrency(preferences.currency);
   }
 
   refreshBudgetSummary();

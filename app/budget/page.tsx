@@ -388,19 +388,25 @@ return (
                       </h3>
 
                       <p className="mt-1 text-sm text-gray-500">
-                        {new Date(
-                          `${transaction.date}T00:00:00`
-                        ).toLocaleDateString("en-AE", {
-                          day: "numeric",
-                          month: "short",
-                          year: "numeric",
-                        })}
-                        {" • "}
-                        {transaction.itemCount} item
-                        {transaction.itemCount === 1
-                          ? ""
-                          : "s"}
-                      </p>
+  {new Date(
+    `${transaction.date}T00:00:00`
+  ).toLocaleDateString("en-AE", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  })}
+
+  {transaction.store && (
+    <>
+      {" • "}
+      {transaction.store}
+    </>
+  )}
+
+  {" • "}
+  {transaction.itemCount} item
+  {transaction.itemCount === 1 ? "" : "s"}
+</p>
                     </div>
 
                     <div className="flex items-center justify-between gap-4 sm:justify-end">
