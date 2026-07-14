@@ -1,8 +1,8 @@
-# 🍽️ Nair Kitchen - Product Vision
+# 🍽️ Kitchen Brain - Product Vision
 
 ## Vision
 
-Nair Kitchen is a modern family kitchen management application designed to simplify everyday meal planning, pantry management, grocery shopping, and recipe organization.
+Kitchen Brain is a modern family kitchen management application designed to simplify everyday meal planning, pantry management, grocery shopping, and recipe organization.
 
 The goal is to reduce the stress of deciding what to cook, remembering what ingredients are available, and managing grocery shopping while providing a clean and enjoyable user experience.
 
@@ -195,7 +195,7 @@ Smart Kitchen Features
 
 # Success Criteria
 
-Nair Kitchen will be considered successful when it becomes the primary application used by our family for:
+Kitchen Brain will be considered successful when it becomes the primary application used by our family for:
 
 - Weekly meal planning
 - Pantry management

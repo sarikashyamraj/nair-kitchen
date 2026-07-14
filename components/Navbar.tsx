@@ -6,11 +6,11 @@ export default function Navbar() {
       <div className="max-w-6xl mx-auto flex items-center justify-between px-8 py-5">
         <div>
           <h1 className="text-3xl font-bold text-white">
-            🏡 Nair Kitchen
+            🏡 Kitchen Brain
           </h1>
 
           <p className="text-green-100 text-sm">
-            Your Family Kitchen Assistant
+            Plan Meals. Shop Smarter. Live Easier.
           </p>
         </div>
 

@@ -1,4 +1,4 @@
-# 🍽️ Nair Kitchen
+# 🍽️ Kitchen Brain
 
 ![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)
 ![React](https://img.shields.io/badge/React-19-61DAFB?logo=react)
@@ -9,15 +9,19 @@
 
 A modern **Smart Family Kitchen Management System** built with **Next.js**, **React**, **TypeScript**, and **Tailwind CSS**.
 
-Nair Kitchen brings meal planning, Recipe management, Pantry inventory, Grocery shopping, household Grocery budgeting, and regional preferences together in one responsive application.
+**Kitchen Brain** brings meal planning, recipe organization, Pantry management, Grocery shopping, and household Grocery budgeting together in one simple and intuitive application.
+
+Designed to reduce everyday planning effort, Kitchen Brain helps families organize their kitchen, shop smarter, reduce food waste, and simplify daily meal decisions.
 
 ---
 
-# 💡 Why Nair Kitchen?
+# 💡 Why Kitchen Brain?
 
-Planning meals for a family often requires using separate notes, shopping lists, Recipe apps, Pantry trackers, and expense records.
+Kitchen Brain was created to simplify everyday meal planning and kitchen management for families.
 
-Nair Kitchen was created to bring these everyday kitchen activities together in one organized application.
+Instead of using separate apps for Recipes, Pantry inventory, Grocery shopping, weekly meal planning, and Grocery budgeting, Kitchen Brain brings everything together in one organized application.
+
+The project was inspired by a real household need and developed as a hands-on journey into modern full-stack application development using Next.js, React, TypeScript, and Tailwind CSS.
 
 The app helps families:
 
@@ -74,6 +78,15 @@ The project was created to solve a real household need while also serving as a h
 ## 🛒 Grocery Management
 
 ![Grocery](screenshots/grocery.png)
+
+---
+
+## 💰 Grocery Budget
+- Monthly Grocery budget tracking
+- Grocery transaction history
+- Store and expense details
+- Budget progress monitoring
+- Region-aware currency display
 
 ---
 
@@ -253,7 +266,7 @@ The project was created to solve a real household need while also serving as a h
 
 # 🏗️ Application Architecture
 
-Nair Kitchen currently uses a client-side architecture with shared React Context and browser Local Storage.
+Kitchen Brain currently uses a client-side architecture with shared React Context and browser Local Storage.
 
 Core application data includes:
 
@@ -446,6 +459,16 @@ Version 1.1.0 has completed:
 - Application metadata.
 - App Store and Google Play visual assets.
 
+## 🚧 Version 1.1 – Mobile Experience & Product Branding
+- Kitchen Brain product identity
+- Official app icon and favicon
+- Responsive mobile header
+- Mobile navigation drawer
+- Mobile Design System
+- Region and currency preferences
+- App-wide date-format integration
+- Grocery Budget module
+
 ## 📋 Future Releases
 
 - Data backup and restore.
@@ -467,7 +490,7 @@ Version 1.1.0 has completed:
 
 **Sarika Nair**
 
-Business Development Professional | Learning Full-Stack Development
+Business Development Professional | Product Builder | Learning Full-Stack Development
 
 Built with ❤️ using Next.js, React, TypeScript, and Tailwind CSS.
 

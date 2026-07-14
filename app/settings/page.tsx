@@ -90,7 +90,7 @@ export default function SettingsPage() {
           </h1>
 
           <p className="mt-1 text-sm text-gray-500">
-            Personalise Nair Kitchen for your household.
+            Personalise Kitchen Brain for your household...
           </p>
         </section>
 

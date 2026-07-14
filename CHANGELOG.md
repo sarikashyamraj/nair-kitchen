@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to Nair Kitchen will be documented in this file.
+All notable changes to Kitchen Brain will be documented in this file.
 
 ---
 

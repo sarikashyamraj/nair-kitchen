@@ -1,6 +1,10 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useState } from "react";
+
 import {
   Menu,
   X,
@@ -12,17 +16,43 @@ import {
   WalletCards,
   Settings,
 } from "lucide-react";
-import { useState } from "react";
-import { usePathname } from "next/navigation";
 
 const menuItems = [
-  { name: "Dashboard", href: "/", icon: Home },
-  { name: "Planner", href: "/planner", icon: CalendarDays },
-  { name: "Pantry", href: "/pantry", icon: Package },
-  { name: "Recipes", href: "/recipes", icon: BookOpen },
-  { name: "Grocery", href: "/grocery", icon: ShoppingCart },
-  { name: "Settings", href: "/settings", icon: Settings },
-  { name: "Budget", href: "/budget", icon: WalletCards },
+  {
+    name: "Dashboard",
+    href: "/",
+    icon: Home,
+  },
+  {
+    name: "Planner",
+    href: "/planner",
+    icon: CalendarDays,
+  },
+  {
+    name: "Pantry",
+    href: "/pantry",
+    icon: Package,
+  },
+  {
+    name: "Recipes",
+    href: "/recipes",
+    icon: BookOpen,
+  },
+  {
+    name: "Grocery",
+    href: "/grocery",
+    icon: ShoppingCart,
+  },
+  {
+    name: "Budget",
+    href: "/budget",
+    icon: WalletCards,
+  },
+  {
+    name: "Settings",
+    href: "/settings",
+    icon: Settings,
+  },
 ];
 
 export default function MobileMenu() {
@@ -32,67 +62,135 @@ export default function MobileMenu() {
   return (
     <>
       {/* Mobile Header */}
-      <div className="lg:hidden flex items-center justify-between mb-4">
-        <button
-          onClick={() => setOpen(true)}
-          className="p-2 rounded-xl border border-[#EADCC4] bg-white"
+      <div className="flex items-center justify-between gap-3 border-b border-[#F4E8D0] bg-white px-4 py-3 md:hidden">
+        <Link
+          href="/"
+          className="flex min-w-0 items-center gap-2.5"
         >
-          <Menu size={24} />
+          <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-xl border border-[#EADCC4] bg-[#FFF8EC] shadow-sm">
+            <Image
+              src="/branding/kitchen-brain-icon.png"
+              alt="Kitchen Brain"
+              fill
+              sizes="44px"
+              className="object-cover"
+              priority
+            />
+          </div>
+
+          <div className="min-w-0">
+            <h2 className="truncate text-lg font-semibold leading-tight text-[#174D2A]">
+              Kitchen{" "}
+              <span className="text-[#C88A22]">
+                Brain
+              </span>
+            </h2>
+
+            <p className="truncate text-[9px] leading-4 text-gray-500">
+              Plan Meals. Shop Smarter. Live Easier.
+            </p>
+          </div>
+        </Link>
+
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          aria-label="Open navigation menu"
+          aria-expanded={open}
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-[#EADCC4] bg-[#FFF8EC] text-[#2F6B3C] shadow-sm transition hover:bg-[#F4E8D0]"
+        >
+          <Menu size={23} />
         </button>
-
-        <h1 className="text-lg font-bold text-[#2F6B3C]">
-          Nair Kitchen
-        </h1>
-
-        <div className="w-10" />
       </div>
 
       {/* Overlay */}
       {open && (
-        <div
-          className="fixed inset-0 bg-black/40 z-40"
+        <button
+          type="button"
+          aria-label="Close navigation menu"
+          className="fixed inset-0 z-40 bg-black/40 md:hidden"
           onClick={() => setOpen(false)}
         />
       )}
 
       {/* Drawer */}
-      <div
-        className={`fixed top-0 left-0 h-full w-72 bg-white shadow-xl z-50 transform transition-transform duration-300 ${
-          open ? "translate-x-0" : "-translate-x-full"
+      <aside
+        className={`fixed left-0 top-0 z-50 flex h-full w-72 flex-col bg-white shadow-xl transition-transform duration-300 md:hidden ${
+          open
+            ? "translate-x-0"
+            : "-translate-x-full"
         }`}
       >
-        <div className="flex items-center justify-between p-5 border-b">
-          <h2 className="text-xl font-bold text-[#2F6B3C]">
-            Nair Kitchen
-          </h2>
+        {/* Drawer Brand */}
+        <div className="flex items-center justify-between border-b border-[#F4E8D0] p-4">
+          <Link
+            href="/"
+            onClick={() => setOpen(false)}
+            className="flex min-w-0 items-center gap-3"
+          >
+            <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-xl border border-[#EADCC4] bg-[#FFF8EC] shadow-sm">
+              <Image
+                src="/branding/kitchen-brain-icon.png"
+                alt="Kitchen Brain"
+                fill
+                sizes="48px"
+                className="object-cover"
+              />
+            </div>
 
-          <button onClick={() => setOpen(false)}>
-            <X size={24} />
+            <div className="min-w-0">
+              <h2 className="text-xl font-semibold leading-tight text-[#174D2A]">
+                Kitchen{" "}
+                <span className="text-[#C88A22]">
+                  Brain
+                </span>
+              </h2>
+
+              <p className="mt-0.5 text-[9px] leading-4 text-gray-500">
+                Plan Meals. Shop Smarter.
+                <br />
+                Live Easier.
+              </p>
+            </div>
+          </Link>
+
+          <button
+            type="button"
+            onClick={() => setOpen(false)}
+            aria-label="Close navigation menu"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-[#5A4032] transition hover:bg-[#F4E8D0]"
+          >
+            <X size={23} />
           </button>
         </div>
 
-        <nav className="p-4 space-y-2">
+        {/* Navigation */}
+        <nav className="flex-1 space-y-2 overflow-y-auto p-4">
           {menuItems.map((item) => {
             const Icon = item.icon;
+            const isActive = pathname === item.href;
 
             return (
               <Link
                 key={item.href}
                 href={item.href}
                 onClick={() => setOpen(false)}
-                className={`flex items-center gap-3 px-4 py-3 rounded-xl transition ${
-                  pathname === item.href
-                    ? "bg-[#2F6B3C] text-white"
-                    : "hover:bg-[#F8F4EC]"
+                className={`flex items-center gap-3 rounded-xl px-4 py-3 transition ${
+                  isActive
+                    ? "bg-[#2F6B3C] text-white shadow-sm"
+                    : "text-[#5A4032] hover:bg-[#F8F4EC] hover:text-[#2F6B3C]"
                 }`}
               >
                 <Icon size={20} />
-                {item.name}
+
+                <span className="font-medium">
+                  {item.name}
+                </span>
               </Link>
             );
           })}
         </nav>
-      </div>
+      </aside>
     </>
   );
 }
