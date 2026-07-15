@@ -15,9 +15,16 @@ import {
 import { defaultPreferences } from "../../data/defaultPreferences";
 
 import {
+  loadCloudPreferences,
+  saveCloudPreferences,
+} from "../../services/preferencesService";
+
+import {
   loadPreferences,
   savePreferences,
 } from "../../lib/preferencesStorage";
+
+import { useToast } from "../../context/ToastContext";
 
 
 
@@ -35,16 +42,61 @@ const weekStartOptions: WeekStartDay[] = [
 ];
 
 export default function SettingsPage() {
+  const { showToast } = useToast();
   const [preferences, setPreferences] =
     useState<UserPreferences>(defaultPreferences);
 
   const [isLoaded, setIsLoaded] = useState(false);
   const [savedMessage, setSavedMessage] = useState("");
-
+const [isSaving, setIsSaving] = useState(false);
+const [loadError, setLoadError] = useState("");
   useEffect(() => {
-    setPreferences(loadPreferences());
-    setIsLoaded(true);
-  }, []);
+  let isMounted = true;
+
+  async function loadSettings() {
+    try {
+      setLoadError("");
+
+      const cloudPreferences =
+        await loadCloudPreferences();
+
+      if (!isMounted) return;
+
+      setPreferences(cloudPreferences);
+
+      // Keep Local Storage synchronized temporarily
+      // because Dashboard, Budget and Header still read from it.
+      savePreferences(cloudPreferences);
+    } catch (error) {
+      if (!isMounted) return;
+
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Unable to load settings.";
+
+      setLoadError(message);
+
+      // Temporary fallback during migration.
+      setPreferences(loadPreferences());
+
+      showToast({
+        type: "error",
+        message,
+      });
+    } finally {
+      if (isMounted) {
+        setIsLoaded(true);
+      }
+    }
+  }
+
+  void loadSettings();
+
+  return () => {
+    isMounted = false;
+  };
+}, [showToast]);
 
   function updatePreference<K extends keyof UserPreferences>(
     key: K,
@@ -56,19 +108,49 @@ export default function SettingsPage() {
     }));
   }
 
-  function handleSave() {
-    savePreferences(preferences);
+  async function handleSave() {
+  try {
+    setIsSaving(true);
+    setSavedMessage("");
+
+    const savedPreferences =
+      await saveCloudPreferences(preferences);
+
+    setPreferences(savedPreferences);
+
+    // Temporary Local Storage sync for modules
+    // not yet migrated to Supabase.
+    savePreferences(savedPreferences);
 
     window.dispatchEvent(
       new Event("preferences-updated")
     );
 
-    setSavedMessage("Settings saved successfully.");
+    setSavedMessage(
+      "Settings saved successfully."
+    );
+
+    showToast({
+      type: "success",
+      message:
+        "Settings saved successfully.",
+    });
 
     window.setTimeout(() => {
       setSavedMessage("");
     }, 3000);
+  } catch (error) {
+    showToast({
+      type: "error",
+      message:
+        error instanceof Error
+          ? error.message
+          : "Unable to save settings.",
+    });
+  } finally {
+    setIsSaving(false);
   }
+}
 
   if (!isLoaded) {
     return (
@@ -79,7 +161,15 @@ export default function SettingsPage() {
       </AppLayout>
     );
   }
-
+if (loadError) {
+  return (
+    <AppLayout>
+      <div className="rounded-2xl border border-red-200 bg-red-50 p-6 text-sm text-red-700 shadow-sm">
+        {loadError}
+      </div>
+    </AppLayout>
+  );
+}
   return (
     <AppLayout>
       <div className="space-y-6">
@@ -234,39 +324,39 @@ export default function SettingsPage() {
 </section>
 
         {/* Measurement */}
-        <section className="rounded-2xl border border-[#EADCC4] bg-white p-5 shadow-sm sm:p-6">
-          <h2 className="text-xl font-bold text-[#2F6B3C]">
-            📏 Measurement
-          </h2>
+<section className="rounded-2xl border border-[#EADCC4] bg-white p-5 shadow-sm sm:p-6">
+  <h2 className="text-xl font-bold text-[#2F6B3C]">
+    📏 Measurement
+  </h2>
 
-          <p className="mt-1 text-sm text-gray-500">
-            Select the measurement system used in Pantry and Recipes.
-          </p>
+  <p className="mt-1 text-sm text-gray-500">
+    Select the measurement system used in Pantry and Recipes.
+  </p>
 
-          <div className="mt-5 grid grid-cols-2 gap-3">
-            {(["Metric", "Imperial"] as MeasurementSystem[]).map(
-              (system) => (
-                <button
-                  key={system}
-                  type="button"
-                  onClick={() =>
-                    updatePreference(
-                      "measurementSystem",
-                      system
-                    )
-                  }
-                  className={`rounded-xl border px-4 py-3 font-semibold transition ${
-                    preferences.measurementSystem === system
-                      ? "border-[#2F6B3C] bg-[#2F6B3C] text-white"
-                      : "border-[#EADCC4] bg-[#FFF8EC] text-[#5A4032]"
-                  }`}
-                >
-                  {system}
-                </button>
-              )
-            )}
-          </div>
-        </section>
+  <div className="mt-5 grid grid-cols-2 gap-3">
+    {(["Metric", "Imperial"] as MeasurementSystem[]).map(
+      (system) => (
+        <button
+          key={system}
+          type="button"
+          onClick={() =>
+            updatePreference(
+              "measurementSystem",
+              system
+            )
+          }
+          className={`rounded-xl border px-4 py-3 font-semibold transition ${
+            preferences.measurementSystem === system
+              ? "border-[#2F6B3C] bg-[#2F6B3C] text-white"
+              : "border-[#EADCC4] bg-[#FFF8EC] text-[#5A4032]"
+          }`}
+        >
+          {system}
+        </button>
+      )
+    )}
+  </div>
+</section>
 
         {/* Notifications */}
         <section className="rounded-2xl border border-[#EADCC4] bg-white p-5 shadow-sm sm:p-6">
@@ -353,24 +443,26 @@ export default function SettingsPage() {
             })}
           </div>
         </section>
+{/* Save Area */}
+<section className="sticky bottom-0 rounded-2xl border border-[#EADCC4] bg-white/95 p-4 shadow-lg backdrop-blur">
+  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <p className="text-sm text-gray-500">
+      {savedMessage ||
+        "Save your changes to apply them across the app."}
+    </p>
 
-        {/* Save Area */}
-        <section className="sticky bottom-0 rounded-2xl border border-[#EADCC4] bg-white/95 p-4 shadow-lg backdrop-blur">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-sm text-gray-500">
-              {savedMessage ||
-                "Save your changes to apply them across the app."}
-            </p>
-
-            <button
-              type="button"
-              onClick={handleSave}
-              className="rounded-xl bg-[#2F6B3C] px-6 py-3 font-semibold text-white"
-            >
-              Save Settings
-            </button>
-          </div>
-        </section>
+    <button
+      type="button"
+      onClick={handleSave}
+      disabled={isSaving}
+      className="rounded-xl bg-[#2F6B3C] px-6 py-3 font-semibold text-white transition hover:bg-[#255A32] disabled:cursor-not-allowed disabled:opacity-60"
+    >
+      {isSaving
+        ? "Saving..."
+        : "Save Settings"}
+    </button>
+  </div>
+</section>
       </div>
     </AppLayout>
   );
