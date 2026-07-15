@@ -13,7 +13,7 @@ import { UserPreferences } from "../../types/preferences";
 import { defaultUserProfile } from "../../data/defaultProfile";
 import { defaultPreferences } from "../../data/defaultPreferences";
 
-import { loadUserProfile } from "../../lib/profileStorage";
+import { loadCloudProfile } from "../../services/profileService";
 import { loadPreferences } from "../../lib/preferencesStorage";
 import { formatDateByPreference } from "../../lib/dateFormatter";
 export default function TopHeader() {
@@ -31,24 +31,49 @@ export default function TopHeader() {
   const notificationRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    function refreshProfile() {
-      setProfile(loadUserProfile());
-    }
+  let isMounted = true;
 
-    refreshProfile();
+  async function refreshProfile() {
+    try {
+      const cloudProfileResult =
+        await loadCloudProfile();
 
-    window.addEventListener(
-      "profile-updated",
-      refreshProfile
-    );
-
-    return () => {
-      window.removeEventListener(
-        "profile-updated",
-        refreshProfile
+      if (
+        isMounted &&
+        cloudProfileResult.profile
+      ) {
+        setProfile(
+          cloudProfileResult.profile
+        );
+      }
+    } catch (error) {
+      console.error(
+        "Unable to load profile in header:",
+        error
       );
-    };
-  }, []);
+    }
+  }
+
+  void refreshProfile();
+
+  function handleProfileUpdated() {
+    void refreshProfile();
+  }
+
+  window.addEventListener(
+    "profile-updated",
+    handleProfileUpdated
+  );
+
+  return () => {
+    isMounted = false;
+
+    window.removeEventListener(
+      "profile-updated",
+      handleProfileUpdated
+    );
+  };
+}, []);
 
   useEffect(() => {
     function refreshPreferences() {

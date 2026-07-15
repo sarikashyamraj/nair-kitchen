@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-
+import LogoutButton from "./auth/LogoutButton";
 import {
   Home,
   CalendarDays,
@@ -116,8 +116,13 @@ export default function Sidebar() {
         })}
       </nav>
 
-      {/* Kitchen Tip */}
-      <div className="border-t border-[#F4E8D0] p-6">
+      {/* Logout */}
+<div className="border-t border-[#F4E8D0] px-5 py-4">
+  <LogoutButton />
+</div>
+
+{/* Kitchen Tip */}
+<div className="border-t border-[#F4E8D0] p-6">
         <div className="rounded-2xl border border-[#F4E8D0] bg-[#FFF8EC] p-4">
           <div className="mb-3 flex items-center gap-2">
             <Lightbulb

@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useEffect, useState } from "react";
-
+import { uploadProfileImage } from "../../services/profileImageService";
 import AppLayout from "../../components/AppLayout";
 import ConfirmModal from "../../components/common/ConfirmModal";
 import {
@@ -13,11 +13,19 @@ import {
 } from "../../types/profile";
 
 import {
+  deleteCloudFamilyMember,
+  loadCloudFamilyMembers,
+  loadCloudProfile,
+  saveCloudFamilyMember,
+  saveCloudProfile,
+} from "../../services/profileService";
+
+import {
   loadFamilyMembers,
   loadUserProfile,
-  saveFamilyMembers,
-  saveUserProfile,
 } from "../../lib/profileStorage";
+
+import { useToast } from "../../context/ToastContext";
 
 import {
   defaultFamilyMembers,
@@ -41,6 +49,7 @@ const emptyMemberForm: MemberFormData = {
 };
 
 export default function ProfilePage() {
+  const { showToast } = useToast();
   const [profile, setProfile] =
     useState<UserProfile>(defaultUserProfile);
 
@@ -48,7 +57,14 @@ export default function ProfilePage() {
     useState<FamilyMember[]>(defaultFamilyMembers);
 
   const [isLoaded, setIsLoaded] = useState(false);
-
+const [email, setEmail] = useState("");
+const [isSavingProfile, setIsSavingProfile] =
+  useState(false);
+const [isSavingMember, setIsSavingMember] =
+  useState(false);
+const [isDeletingMember, setIsDeletingMember] =
+  useState(false);
+const [loadError, setLoadError] = useState("");
   const [isProfileFormOpen, setIsProfileFormOpen] =
     useState(false);
 
@@ -60,87 +76,184 @@ export default function ProfilePage() {
 
   const [profileForm, setProfileForm] =
     useState<UserProfile>(defaultUserProfile);
+const [isUploadingProfileImage, setIsUploadingProfileImage] =
+  useState(false);
 
+const [isUploadingMemberImage, setIsUploadingMemberImage] =
+  useState(false);
   const [memberForm, setMemberForm] =
     useState<MemberFormData>(emptyMemberForm);
 const [memberToDelete, setMemberToDelete] =
   useState<FamilyMember | null>(null);
   useEffect(() => {
-    const savedProfile = loadUserProfile();
-    const savedMembers = loadFamilyMembers();
+  let isMounted = true;
 
-    setProfile(savedProfile);
-    setProfileForm(savedProfile);
-    setFamilyMembers(savedMembers);
+  async function loadProfileData() {
+    try {
+      setLoadError("");
 
-    setIsLoaded(true);
-  }, []);
+      const localProfile = loadUserProfile();
+      const localMembers = loadFamilyMembers();
 
-  useEffect(() => {
-    if (isLoaded) {
-      saveUserProfile(profile);
+      const [
+        cloudProfileResult,
+        cloudMembersResult,
+      ] = await Promise.all([
+        loadCloudProfile(),
+        loadCloudFamilyMembers(),
+      ]);
+
+      if (!isMounted) return;
+
+      let resolvedProfile =
+        cloudProfileResult.profile;
+
+      
+
+      let resolvedMembers =
+        cloudMembersResult;
+
+      if (
+        cloudMembersResult.length === 0 &&
+        localMembers.length > 0
+      ) {
+        resolvedMembers = await Promise.all(
+          localMembers.map((member) =>
+            saveCloudFamilyMember(member)
+          )
+        );
+      }
+
+      if (!isMounted) return;
+
+      setProfile(resolvedProfile);
+      setProfileForm(resolvedProfile);
+      setEmail(cloudProfileResult.email);
+      setFamilyMembers(resolvedMembers);
+    } catch (error) {
+      if (!isMounted) return;
+
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Unable to load your profile.";
+
+      setLoadError(message);
+
+      showToast({
+        type: "error",
+        message,
+      });
+    } finally {
+      if (isMounted) {
+        setIsLoaded(true);
+      }
     }
-  }, [profile, isLoaded]);
+  }
 
-  useEffect(() => {
-    if (isLoaded) {
-      saveFamilyMembers(familyMembers);
-    }
-  }, [familyMembers, isLoaded]);
-function handleProfilePhotoChange(
+  loadProfileData();
+
+  return () => {
+    isMounted = false;
+  };
+}, [showToast]);
+async function handleProfilePhotoChange(
   event: React.ChangeEvent<HTMLInputElement>
 ) {
   const file = event.target.files?.[0];
 
   if (!file) return;
 
-  if (!file.type.startsWith("image/")) {
-    alert("Please select a valid image file.");
-    return;
+  try {
+    setIsUploadingProfileImage(true);
+
+    const imageUrl = await uploadProfileImage(
+      file,
+      "profile"
+    );
+
+    const updatedProfile =
+      await saveCloudProfile({
+        ...profileForm,
+        profileImage: imageUrl,
+      });
+
+    setProfile(updatedProfile);
+    setProfileForm(updatedProfile);
+
+    window.dispatchEvent(
+      new Event("profile-updated")
+    );
+
+    showToast({
+      type: "success",
+      message:
+        "Profile photo updated successfully.",
+    });
+  } catch (error) {
+    showToast({
+      type: "error",
+      message:
+        error instanceof Error
+          ? error.message
+          : "Unable to upload profile photo.",
+    });
+  } finally {
+    setIsUploadingProfileImage(false);
+    event.target.value = "";
   }
-
-  const reader = new FileReader();
-
-  reader.onloadend = () => {
-    setProfileForm((currentProfile) => ({
-      ...currentProfile,
-      profileImage: reader.result as string,
-    }));
-  };
-
-  reader.readAsDataURL(file);
 }
   function openProfileForm() {
     setProfileForm(profile);
     setIsProfileFormOpen(true);
   }
 
-  function handleSaveProfile() {
+ async function handleSaveProfile() {
   if (!profileForm.name.trim()) {
-    alert("Please enter your name.");
+    showToast({
+      type: "warning",
+      message: "Please enter your name.",
+    });
     return;
   }
 
-  const updatedProfile: UserProfile = {
-    ...profileForm,
-    name: profileForm.name.trim(),
-    role: profileForm.role.trim(),
-    profileImage: profileForm.profileImage,
-  };
+  try {
+    setIsSavingProfile(true);
 
-  // Update the Profile page
-  setProfile(updatedProfile);
+    const updatedProfile =
+      await saveCloudProfile({
+        ...profileForm,
+        name: profileForm.name.trim(),
+        role:
+          profileForm.role.trim() ||
+          "Kitchen Manager",
+      });
 
-  // Save immediately to Local Storage
-  saveUserProfile(updatedProfile);
+    setProfile(updatedProfile);
+    setProfileForm(updatedProfile);
 
-  // Tell TopHeader to load the updated profile
-  window.dispatchEvent(
-    new Event("profile-updated")
-  );
+    window.dispatchEvent(
+      new Event("profile-updated")
+    );
 
-  // Close the Edit Profile form
-  setIsProfileFormOpen(false);
+    setIsProfileFormOpen(false);
+
+    showToast({
+      type: "success",
+      message:
+        "Profile updated successfully.",
+    });
+  } catch (error) {
+    showToast({
+      type: "error",
+      message:
+        error instanceof Error
+          ? error.message
+          : "Unable to update profile.",
+    });
+  } finally {
+    setIsSavingProfile(false);
+  }
 }
 
   function openAddMemberForm() {
@@ -162,67 +275,122 @@ function handleProfilePhotoChange(
 
   setIsMemberFormOpen(true);
 }
-function handleMemberPhotoChange(
+async function handleMemberPhotoChange(
   event: React.ChangeEvent<HTMLInputElement>
 ) {
   const file = event.target.files?.[0];
 
   if (!file) return;
 
-  if (!file.type.startsWith("image/")) {
-    alert("Please select a valid image file.");
-    return;
-  }
+  try {
+    setIsUploadingMemberImage(true);
 
-  const reader = new FileReader();
+    const imageUrl = await uploadProfileImage(
+      file,
+      "family",
+      editingMember?.id
+    );
 
-  reader.onloadend = () => {
     setMemberForm((currentForm) => ({
       ...currentForm,
-      profileImage: reader.result as string,
+      profileImage: imageUrl,
     }));
-  };
 
-  reader.readAsDataURL(file);
+    showToast({
+      type: "success",
+      message: editingMember
+        ? "Photo uploaded. Click Update Member to save the change."
+        : "Photo uploaded. Complete the details and click Add Member.",
+    });
+  } catch (error) {
+    showToast({
+      type: "error",
+      message:
+        error instanceof Error
+          ? error.message
+          : "Unable to upload family member photo.",
+    });
+  } finally {
+    setIsUploadingMemberImage(false);
+    event.target.value = "";
+  }
 }
-  function handleSaveMember() {
+  async function handleSaveMember() {
   if (
     !memberForm.name.trim() ||
     !memberForm.relationship.trim()
   ) {
-    alert("Please enter the member name and relationship.");
+    showToast({
+      type: "warning",
+      message:
+        "Please enter the member name and relationship.",
+    });
     return;
   }
 
-  const updatedMember: FamilyMember = {
-    id: editingMember?.id || crypto.randomUUID(),
+  const memberToSave: FamilyMember = {
+    id:
+      editingMember?.id ||
+      crypto.randomUUID(),
     name: memberForm.name.trim(),
-    relationship: memberForm.relationship.trim(),
+    relationship:
+      memberForm.relationship.trim(),
     age: memberForm.age
       ? Number(memberForm.age)
       : undefined,
-    foodPreference: memberForm.foodPreference,
-    profileImage: memberForm.profileImage,
+    foodPreference:
+      memberForm.foodPreference,
+    profileImage:
+      memberForm.profileImage,
   };
 
-  if (editingMember) {
-    setFamilyMembers((currentMembers) =>
-      currentMembers.map((member) =>
-        member.id === editingMember.id
-          ? updatedMember
-          : member
-      )
-    );
-  } else {
-    setFamilyMembers((currentMembers) => [
-      ...currentMembers,
-      updatedMember,
-    ]);
-  }
+  try {
+    setIsSavingMember(true);
 
-  setEditingMember(null);
-  setMemberForm(emptyMemberForm);
-  setIsMemberFormOpen(false);
+    const savedMember =
+      await saveCloudFamilyMember(
+        memberToSave
+      );
+
+    setFamilyMembers(
+      (currentMembers) => {
+        if (editingMember) {
+          return currentMembers.map(
+            (member) =>
+              member.id === editingMember.id
+                ? savedMember
+                : member
+          );
+        }
+
+        return [
+          ...currentMembers,
+          savedMember,
+        ];
+      }
+    );
+
+    setEditingMember(null);
+    setMemberForm(emptyMemberForm);
+    setIsMemberFormOpen(false);
+
+    showToast({
+      type: "success",
+      message: editingMember
+        ? "Family member updated."
+        : "Family member added.",
+    });
+  } catch (error) {
+    showToast({
+      type: "error",
+      message:
+        error instanceof Error
+          ? error.message
+          : "Unable to save family member.",
+    });
+  } finally {
+    setIsSavingMember(false);
+  }
 }
 
   function handleDeleteMember(member: FamilyMember) {
@@ -230,7 +398,18 @@ function handleMemberPhotoChange(
 }
 
   return (
-    <AppLayout>
+  <AppLayout>
+    {!isLoaded ? (
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <p className="font-semibold text-[#2F6B3C]">
+          Loading your profile...
+        </p>
+      </div>
+    ) : loadError ? (
+      <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-red-700">
+        {loadError}
+      </div>
+    ) : (
       <div className="space-y-6">
         {/* Main Profile */}
         <section className="rounded-2xl border border-[#EADCC4] bg-white p-5 shadow-sm sm:p-6">
@@ -268,6 +447,11 @@ function handleMemberPhotoChange(
               <p className="mt-1 text-sm text-gray-500">
                 {profile.role}
               </p>
+              {email && (
+  <p className="mt-1 text-sm text-gray-500">
+    {email}
+  </p>
+)}
 
               <div className="mt-4 flex flex-wrap gap-2 text-sm">
                 <span className="rounded-full bg-[#FFF4DD] px-3 py-1 text-[#8A5A00]">
@@ -421,11 +605,12 @@ function handleMemberPhotoChange(
         📷 Choose Photo
 
         <input
-          type="file"
-          accept="image/*"
-          onChange={handleProfilePhotoChange}
-          className="hidden"
-        />
+  type="file"
+  accept="image/*"
+  onChange={handleProfilePhotoChange}
+  disabled={isUploadingProfileImage}
+  className="hidden"
+/>
       </label>
 
       <p className="mt-2 text-xs text-gray-500">
@@ -525,12 +710,15 @@ function handleMemberPhotoChange(
                 </button>
 
                 <button
-                  type="button"
-                  onClick={handleSaveProfile}
-                  className="rounded-xl bg-[#2F6B3C] px-4 py-2 font-semibold text-white"
-                >
-                  Save Profile
-                </button>
+  type="button"
+  onClick={handleSaveProfile}
+  disabled={isSavingProfile}
+  className="rounded-xl bg-[#2F6B3C] px-4 py-2 font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+>
+  {isSavingProfile
+    ? "Saving..."
+    : "Save Profile"}
+</button>
               </div>
             </div>
           </div>
@@ -630,16 +818,25 @@ function handleMemberPhotoChange(
     </div>
 
     <div>
-      <label className="inline-flex cursor-pointer items-center rounded-xl border border-[#D89B3C] bg-[#FFF8EC] px-4 py-2 text-sm font-semibold text-[#8A5A00] transition hover:bg-[#FFF4DD]">
-        📷 Choose Photo
+      <label
+  className={`inline-flex items-center rounded-xl border border-[#D89B3C] bg-[#FFF8EC] px-4 py-2 text-sm font-semibold text-[#8A5A00] transition ${
+    isUploadingMemberImage
+      ? "cursor-not-allowed opacity-60"
+      : "cursor-pointer hover:bg-[#FFF4DD]"
+  }`}
+>
+  {isUploadingMemberImage
+    ? "Uploading..."
+    : "📷 Choose Photo"}
 
-        <input
-          type="file"
-          accept="image/*"
-          onChange={handleMemberPhotoChange}
-          className="hidden"
-        />
-      </label>
+  <input
+    type="file"
+    accept="image/*"
+    onChange={handleMemberPhotoChange}
+    disabled={isUploadingMemberImage}
+    className="hidden"
+  />
+</label>
 
       <p className="mt-2 text-xs text-gray-500">
         Select a photo from your gallery or computer.
@@ -712,19 +909,46 @@ function handleMemberPhotoChange(
   confirmText="Delete"
   cancelText="Cancel"
   onCancel={() => setMemberToDelete(null)}
-  onConfirm={() => {
-    if (memberToDelete) {
-      setFamilyMembers(
-        familyMembers.filter(
-          (member) => member.id !== memberToDelete.id
+  onConfirm={async () => {
+  if (!memberToDelete) return;
+
+  try {
+    setIsDeletingMember(true);
+
+    await deleteCloudFamilyMember(
+      memberToDelete.id
+    );
+
+    setFamilyMembers(
+      (currentMembers) =>
+        currentMembers.filter(
+          (member) =>
+            member.id !== memberToDelete.id
         )
-      );
-    }
+    );
 
     setMemberToDelete(null);
-  }}
+
+    showToast({
+      type: "success",
+      message: "Family member deleted.",
+    });
+  } catch (error) {
+    showToast({
+      type: "error",
+      message:
+        error instanceof Error
+          ? error.message
+          : "Unable to delete family member.",
+    });
+  } finally {
+    setIsDeletingMember(false);
+  }
+}}
 />
-      </div>
-    </AppLayout>
-  );
+      
+            </div>
+    )}
+  </AppLayout>
+);
 }

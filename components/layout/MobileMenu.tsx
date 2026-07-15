@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-
+import LogoutButton from "../auth/LogoutButton";
 import {
   Menu,
   X,
@@ -165,31 +165,31 @@ export default function MobileMenu() {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 space-y-2 overflow-y-auto p-4">
+                <nav className="p-4 space-y-2">
           {menuItems.map((item) => {
             const Icon = item.icon;
-            const isActive = pathname === item.href;
 
             return (
               <Link
                 key={item.href}
                 href={item.href}
                 onClick={() => setOpen(false)}
-                className={`flex items-center gap-3 rounded-xl px-4 py-3 transition ${
-                  isActive
-                    ? "bg-[#2F6B3C] text-white shadow-sm"
-                    : "text-[#5A4032] hover:bg-[#F8F4EC] hover:text-[#2F6B3C]"
+                className={`flex items-center gap-3 px-4 py-3 rounded-xl transition ${
+                  pathname === item.href
+                    ? "bg-[#2F6B3C] text-white"
+                    : "hover:bg-[#F8F4EC]"
                 }`}
               >
                 <Icon size={20} />
-
-                <span className="font-medium">
-                  {item.name}
-                </span>
+                {item.name}
               </Link>
             );
           })}
+
+          {/* Logout */}
+          <LogoutButton />
         </nav>
+        
       </aside>
     </>
   );
