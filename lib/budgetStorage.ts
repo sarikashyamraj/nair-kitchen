@@ -22,16 +22,7 @@ export function loadMonthlyBudgets(): MonthlyBudget[] {
   }
 }
 
-export function saveMonthlyBudgets(
-  budgets: MonthlyBudget[]
-) {
-  if (typeof window === "undefined") return;
 
-  localStorage.setItem(
-    BUDGET_KEY,
-    JSON.stringify(budgets)
-  );
-}
 
 export function loadGroceryTransactions(): GroceryTransaction[] {
   if (typeof window === "undefined") {
@@ -50,13 +41,3 @@ export function loadGroceryTransactions(): GroceryTransaction[] {
   }
 }
 
-export function saveGroceryTransactions(
-  transactions: GroceryTransaction[]
-) {
-  if (typeof window === "undefined") return;
-
-  localStorage.setItem(
-    TRANSACTION_KEY,
-    JSON.stringify(transactions)
-  );
-}

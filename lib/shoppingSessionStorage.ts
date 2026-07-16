@@ -21,13 +21,3 @@ export function loadShoppingSessions(): ShoppingSession[] {
   }
 }
 
-export function saveShoppingSessions(
-  sessions: ShoppingSession[]
-) {
-  if (typeof window === "undefined") return;
-
-  localStorage.setItem(
-    SHOPPING_SESSIONS_KEY,
-    JSON.stringify(sessions)
-  );
-}

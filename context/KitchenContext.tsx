@@ -12,10 +12,30 @@ import { Recipe } from "../types/recipe";
 import { ShoppingItem } from "../types/shopping";
 import { MealPlan } from "../types/planner";
 
-import { loadPantry, savePantry } from "../lib/pantryStorage";
-import { loadRecipes, saveRecipes } from "../lib/recipeStorage";
-import { loadShopping, saveShopping } from "../lib/shoppingStorage";
-import { loadPlanner, savePlanner } from "../lib/plannerStorage";
+import {
+  loadCloudPantry,
+  saveCloudPantryItem,
+} from "../services/pantryService";
+
+import {
+  loadCloudRecipes,
+  saveCloudRecipe,
+} from "../services/recipeService";
+
+import {
+  loadCloudGrocery,
+  saveCloudGroceryItems,
+} from "../services/groceryService";
+
+import {
+  loadCloudPlanner,
+  saveCloudPlanner,
+} from "../services/plannerService";
+
+import { loadPantry } from "../lib/pantryStorage";
+import { loadRecipes } from "../lib/recipeStorage";
+import { loadShopping } from "../lib/shoppingStorage";
+import { loadPlanner } from "../lib/plannerStorage";
 
 import { defaultPantry } from "../data/defaultPantry";
 import { defaultRecipes } from "../data/defaultRecipes";
@@ -24,52 +44,167 @@ import { defaultPlanner } from "../data/defaultPlanner";
 
 type KitchenContextType = {
   pantry: PantryItem[];
-  setPantry: React.Dispatch<React.SetStateAction<PantryItem[]>>;
+  setPantry: React.Dispatch<
+    React.SetStateAction<PantryItem[]>
+  >;
 
   recipes: Recipe[];
-  setRecipes: React.Dispatch<React.SetStateAction<Recipe[]>>;
+  setRecipes: React.Dispatch<
+    React.SetStateAction<Recipe[]>
+  >;
 
   shopping: ShoppingItem[];
-  setShopping: React.Dispatch<React.SetStateAction<ShoppingItem[]>>;
+  setShopping: React.Dispatch<
+    React.SetStateAction<ShoppingItem[]>
+  >;
 
   planner: MealPlan[];
-  setPlanner: React.Dispatch<React.SetStateAction<MealPlan[]>>;
+  setPlanner: React.Dispatch<
+    React.SetStateAction<MealPlan[]>
+  >;
+
+  isKitchenLoaded: boolean;
 };
 
-const KitchenContext = createContext<KitchenContextType | null>(null);
+const KitchenContext =
+  createContext<KitchenContextType | null>(
+    null
+  );
 
 export function KitchenProvider({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const [pantry, setPantry] = useState<PantryItem[]>([]);
-  const [recipes, setRecipes] = useState<Recipe[]>([]);
-  const [shopping, setShopping] = useState<ShoppingItem[]>([]);
-  const [planner, setPlanner] = useState<MealPlan[]>([]);
+  const [pantry, setPantry] =
+    useState<PantryItem[]>([]);
+
+  const [recipes, setRecipes] =
+    useState<Recipe[]>([]);
+
+  const [shopping, setShopping] =
+    useState<ShoppingItem[]>([]);
+
+  const [planner, setPlanner] =
+    useState<MealPlan[]>([]);
+
+  const [isKitchenLoaded, setIsKitchenLoaded] =
+    useState(false);
 
   useEffect(() => {
-    setPantry(loadPantry().length ? loadPantry() : defaultPantry);
-    setRecipes(loadRecipes().length ? loadRecipes() : defaultRecipes);
-    setShopping(loadShopping().length ? loadShopping() : defaultShopping);
-    setPlanner(loadPlanner().length ? loadPlanner() : defaultPlanner);
+    let isMounted = true;
+
+    async function loadKitchenData() {
+      try {
+        const [
+          cloudPantry,
+          cloudRecipes,
+          cloudShopping,
+          cloudPlanner,
+        ] = await Promise.all([
+          loadCloudPantry(),
+          loadCloudRecipes(),
+          loadCloudGrocery(),
+          loadCloudPlanner(),
+        ]);
+
+        let resolvedPantry = cloudPantry;
+        let resolvedRecipes = cloudRecipes;
+        let resolvedShopping = cloudShopping;
+        let resolvedPlanner = cloudPlanner;
+
+        if (cloudPantry.length === 0) {
+          const localPantry = loadPantry();
+
+          const pantryToMigrate =
+            localPantry.length > 0
+              ? localPantry
+              : defaultPantry;
+
+          resolvedPantry =
+            await Promise.all(
+              pantryToMigrate.map((item) =>
+                saveCloudPantryItem(item)
+              )
+            );
+        }
+
+        if (cloudRecipes.length === 0) {
+          const localRecipes =
+            loadRecipes();
+
+          const recipesToMigrate =
+            localRecipes.length > 0
+              ? localRecipes
+              : defaultRecipes;
+
+          resolvedRecipes =
+            await Promise.all(
+              recipesToMigrate.map(
+                (recipe) =>
+                  saveCloudRecipe(recipe)
+              )
+            );
+        }
+
+        if (cloudShopping.length === 0) {
+          const localShopping =
+            loadShopping();
+
+          const shoppingToMigrate =
+            localShopping.length > 0
+              ? localShopping
+              : defaultShopping;
+
+          if (
+            shoppingToMigrate.length > 0
+          ) {
+            resolvedShopping =
+              await saveCloudGroceryItems(
+                shoppingToMigrate
+              );
+          }
+        }
+
+        if (cloudPlanner.length === 0) {
+          const localPlanner =
+            loadPlanner();
+
+          const plannerToMigrate =
+            localPlanner.length > 0
+              ? localPlanner
+              : defaultPlanner;
+
+          resolvedPlanner =
+            await saveCloudPlanner(
+              plannerToMigrate
+            );
+        }
+
+        if (!isMounted) return;
+
+        setPantry(resolvedPantry);
+        setRecipes(resolvedRecipes);
+        setShopping(resolvedShopping);
+        setPlanner(resolvedPlanner);
+      } catch (error) {
+        console.error(
+          "Unable to load Kitchen data:",
+          error
+        );
+      } finally {
+        if (isMounted) {
+          setIsKitchenLoaded(true);
+        }
+      }
+    }
+
+    void loadKitchenData();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
-
-  useEffect(() => {
-    savePantry(pantry);
-  }, [pantry]);
-
-  useEffect(() => {
-    saveRecipes(recipes);
-  }, [recipes]);
-
-  useEffect(() => {
-    saveShopping(shopping);
-  }, [shopping]);
-
-  useEffect(() => {
-    savePlanner(planner);
-  }, [planner]);
 
   return (
     <KitchenContext.Provider
@@ -82,6 +217,7 @@ export function KitchenProvider({
         setShopping,
         planner,
         setPlanner,
+        isKitchenLoaded,
       }}
     >
       {children}
@@ -90,10 +226,13 @@ export function KitchenProvider({
 }
 
 export function useKitchen() {
-  const context = useContext(KitchenContext);
+  const context =
+    useContext(KitchenContext);
 
   if (!context) {
-    throw new Error("useKitchen must be used inside KitchenProvider");
+    throw new Error(
+      "useKitchen must be used inside KitchenProvider"
+    );
   }
 
   return context;

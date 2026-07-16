@@ -4,7 +4,8 @@ import { Recipe } from "../../types/recipe";
 import { addIngredientsToGrocery } from "../../lib/groceryService";
 import ConfirmModal from "../common/ConfirmModal";
 import { useToast } from "../../context/ToastContext";
-
+import { useKitchen } from "../../context/KitchenContext";
+import { saveCloudGroceryItems } from "../../services/groceryService";
 import RecipesDesktopTable from "./RecipesDesktopTable";
 import RecipesMobileCards from "./RecipesMobileCards";
 
@@ -24,6 +25,8 @@ export default function RecipesTable({
   selectedCategory,
 }: RecipesTableProps) {
   const { showToast } = useToast();
+  const { shopping, setShopping } =
+  useKitchen();
   const [recipeToDelete, setRecipeToDelete] = useState<Recipe | null>(null);
 
   const filteredRecipes = recipes.filter((recipe) => {
@@ -47,14 +50,59 @@ export default function RecipesTable({
     return oldRecipe.mealType || "Not set";
   }
 
-  function handleAddToGrocery(recipe: Recipe) {
-    addIngredientsToGrocery(recipe.ingredients);
+  async function handleAddToGrocery(
+  recipe: Recipe
+) {
+  try {
+    const mergedGrocery =
+      addIngredientsToGrocery(
+        shopping,
+        recipe.ingredients
+      );
+
+    const newItems =
+      mergedGrocery.filter(
+        (mergedItem) =>
+          !shopping.some(
+            (existingItem) =>
+              existingItem.id ===
+              mergedItem.id
+          )
+      );
+
+    if (newItems.length === 0) {
+      showToast({
+        type: "info",
+        message:
+          "All ingredients are already in Grocery.",
+      });
+      return;
+    }
+
+    const savedNewItems =
+      await saveCloudGroceryItems(
+        newItems
+      );
+
+    setShopping((currentItems) => [
+      ...currentItems,
+      ...savedNewItems,
+    ]);
 
     showToast({
       type: "success",
       message: `"${recipe.name}" ingredients added to Grocery.`,
     });
+  } catch (error) {
+    showToast({
+      type: "error",
+      message:
+        error instanceof Error
+          ? error.message
+          : "Unable to add ingredients to Grocery.",
+    });
   }
+}
 
   return (
     <>

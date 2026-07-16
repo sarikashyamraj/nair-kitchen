@@ -1,36 +1,38 @@
 import { RecipeIngredient } from "../types/recipe";
 import { ShoppingItem } from "../types/shopping";
-import {
-  loadShopping,
-  saveShopping,
-} from "./shoppingStorage";
 
 export function addIngredientsToGrocery(
+  currentGrocery: ShoppingItem[],
   ingredients: RecipeIngredient[]
-) {
-  const grocery = loadShopping();
+): ShoppingItem[] {
+  const updatedGrocery = [
+    ...currentGrocery,
+  ];
 
   ingredients.forEach((ingredient) => {
-    const existing = grocery.find(
-      (item) =>
-        item.name.toLowerCase() ===
-        ingredient.name.toLowerCase()
-    );
+    const existingItem =
+      updatedGrocery.find(
+        (item) =>
+          item.name
+            .trim()
+            .toLowerCase() ===
+          ingredient.name
+            .trim()
+            .toLowerCase()
+      );
 
-    if (existing) {
+    if (existingItem) {
       return;
     }
 
-    const shoppingItem: ShoppingItem = {
-      id: Date.now().toString() + Math.random(),
-      name: ingredient.name,
+    updatedGrocery.push({
+      id: crypto.randomUUID(),
+      name: ingredient.name.trim(),
       category: "Grocery",
       quantity: `${ingredient.quantity} ${ingredient.unit}`,
       purchased: false,
-    };
-
-    grocery.push(shoppingItem);
+    });
   });
 
-  saveShopping(grocery);
+  return updatedGrocery;
 }
