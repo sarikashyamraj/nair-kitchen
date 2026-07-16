@@ -11,7 +11,7 @@ import { PantryItem } from "../types/pantry";
 import { Recipe } from "../types/recipe";
 import { ShoppingItem } from "../types/shopping";
 import { MealPlan } from "../types/planner";
-
+import { createClient } from "../utils/supabase/client";
 import {
   loadCloudPantry,
   saveCloudPantryItem,
@@ -95,18 +95,33 @@ export function KitchenProvider({
     let isMounted = true;
 
     async function loadKitchenData() {
-      try {
-        const [
-          cloudPantry,
-          cloudRecipes,
-          cloudShopping,
-          cloudPlanner,
-        ] = await Promise.all([
-          loadCloudPantry(),
-          loadCloudRecipes(),
-          loadCloudGrocery(),
-          loadCloudPlanner(),
-        ]);
+  try {
+    const supabase = createClient();
+
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      if (isMounted) {
+        setIsKitchenLoaded(true);
+      }
+
+      return;
+    }
+
+    const [
+      cloudPantry,
+      cloudRecipes,
+      cloudShopping,
+      cloudPlanner,
+    ] = await Promise.all([
+      loadCloudPantry(),
+      loadCloudRecipes(),
+      loadCloudGrocery(),
+      loadCloudPlanner(),
+    ]);
 
         let resolvedPantry = cloudPantry;
         let resolvedRecipes = cloudRecipes;

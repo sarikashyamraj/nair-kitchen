@@ -44,7 +44,7 @@ export default function ForgotPasswordPage() {
     trimmedEmail,
     {
       redirectTo:
-  `${window.location.origin}/auth/update-password`,
+        `${window.location.origin}/auth/callback?next=/auth/update-password`,
     }
   );
 

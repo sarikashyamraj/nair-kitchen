@@ -1,7 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import {
+  useEffect,
+  useState,
+} from "react";
 import {
   CheckCircle2,
   Eye,
@@ -13,7 +16,9 @@ import {
 import { createClient } from "../../../utils/supabase/client";
 
 export default function UpdatePasswordPage() {
-  const supabase = createClient();
+  const [supabase] = useState(() =>
+  createClient()
+);
 
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] =
@@ -33,11 +38,47 @@ export default function UpdatePasswordPage() {
 
   const [isSubmitting, setIsSubmitting] =
     useState(false);
+const [isSessionReady, setIsSessionReady] =
+  useState(false);
+useEffect(() => {
+  let isMounted = true;
 
+  async function verifyRecoverySession() {
+    const {
+      data: { user },
+      error,
+    } = await supabase.auth.getUser();
+
+    if (!isMounted) return;
+
+    if (error || !user) {
+      setErrorMessage(
+        "The password-reset link is invalid or has expired. Please request a new reset link."
+      );
+      setIsSessionReady(false);
+      return;
+    }
+
+    setErrorMessage("");
+    setIsSessionReady(true);
+  }
+
+  void verifyRecoverySession();
+
+  return () => {
+    isMounted = false;
+  };
+}, [supabase]);
   async function handleUpdatePassword(
     event: React.FormEvent<HTMLFormElement>
   ) {
     event.preventDefault();
+    if (!isSessionReady) {
+  setErrorMessage(
+    "Your password-reset session is not ready. Please request a new reset link."
+  );
+  return;
+}
 
     if (password.length < 8) {
       setErrorMessage(
@@ -222,21 +263,26 @@ export default function UpdatePasswordPage() {
         )}
 
         <button
-          type="submit"
-          disabled={isSubmitting}
-          className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#2F6B3C] px-4 font-semibold text-white shadow-sm transition hover:bg-[#255A32] disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {isSubmitting && (
-            <LoaderCircle
-              size={18}
-              className="animate-spin"
-            />
-          )}
+  type="submit"
+  disabled={
+    isSubmitting ||
+    !isSessionReady
+  }
+  className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#2F6B3C] px-4 font-semibold text-white shadow-sm transition hover:bg-[#255A32] disabled:cursor-not-allowed disabled:opacity-60"
+>
+  {isSubmitting && (
+    <LoaderCircle
+      size={18}
+      className="animate-spin"
+    />
+  )}
 
-          {isSubmitting
-            ? "Updating password..."
-            : "Update Password"}
-        </button>
+  {!isSessionReady
+    ? "Verifying Reset Link..."
+    : isSubmitting
+    ? "Updating password..."
+    : "Update Password"}
+</button>
       </form>
     </div>
   );
