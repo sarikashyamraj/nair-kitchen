@@ -1,5 +1,5 @@
 import { useState } from "react";
-
+import { deleteCloudRecipe } from "../../services/recipeService";
 import { Recipe } from "../../types/recipe";
 import { addIngredientsToGrocery } from "../../lib/groceryService";
 import ConfirmModal from "../common/ConfirmModal";
@@ -93,20 +93,35 @@ export default function RecipesTable({
         confirmText="Delete"
         cancelText="Cancel"
         onCancel={() => setRecipeToDelete(null)}
-        onConfirm={() => {
-          if (recipeToDelete) {
-            setRecipes(
-              recipes.filter((recipe) => recipe.id !== recipeToDelete.id)
-            );
+        onConfirm={async () => {
+  if (!recipeToDelete) return;
 
-            showToast({
-              type: "success",
-              message: `"${recipeToDelete.name}" deleted successfully.`,
-            });
-          }
+  try {
+    await deleteCloudRecipe(recipeToDelete.id);
 
-          setRecipeToDelete(null);
-        }}
+    setRecipes((currentRecipes) =>
+      currentRecipes.filter(
+        (recipe) =>
+          recipe.id !== recipeToDelete.id
+      )
+    );
+
+    showToast({
+      type: "success",
+      message: `"${recipeToDelete.name}" deleted successfully.`,
+    });
+  } catch (error) {
+    showToast({
+      type: "error",
+      message:
+        error instanceof Error
+          ? error.message
+          : "Unable to delete recipe.",
+    });
+  } finally {
+    setRecipeToDelete(null);
+  }
+}}
       />
     </>
   );

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Recipe, RecipeIngredient, MealType } from "../../types/recipe";
-import { saveRecipes } from "../../lib/recipeStorage";
+import { saveCloudRecipe } from "../../services/recipeService";
 import { MEAL_TYPES, RECIPE_CATEGORIES } from "../../constants/categories";
 import { UNITS } from "../../constants/units";
 import { useToast } from "../../context/ToastContext";
@@ -25,7 +25,7 @@ export default function RecipeForm({
   onClose,
 }: RecipeFormProps) {
   const { showToast } = useToast();
-
+const [isSaving, setIsSaving] = useState(false);
   const [name, setName] = useState("");
   const [category, setCategory] = useState("Vegetarian");
   const [mealTypes, setMealTypes] = useState<MealType[]>(["Lunch"]);
@@ -57,56 +57,69 @@ export default function RecipeForm({
     }
   };
 
-  const handleSave = () => {
-    if (!name.trim()) {
-      showToast({
-        type: "warning",
-        message: "Please enter recipe name.",
-      });
-      return;
-    }
+  const handleSave = async () => {
+  if (!name.trim()) {
+    showToast({
+      type: "warning",
+      message: "Please enter recipe name.",
+    });
+    return;
+  }
 
-    if (mealTypes.length === 0) {
-      showToast({
-        type: "warning",
-        message: "Please select at least one meal type.",
-      });
-      return;
-    }
+  if (mealTypes.length === 0) {
+    showToast({
+      type: "warning",
+      message: "Please select at least one meal type.",
+    });
+    return;
+  }
 
-    const validIngredients = ingredients.filter(
-      (ingredient) =>
-        ingredient.name.trim() &&
-        ingredient.quantity > 0 &&
-        ingredient.unit.trim()
-    );
+  const validIngredients = ingredients.filter(
+    (ingredient) =>
+      ingredient.name.trim() &&
+      ingredient.quantity > 0 &&
+      ingredient.unit.trim()
+  );
 
-    if (validIngredients.length === 0) {
-      showToast({
-        type: "warning",
-        message: "Please add at least one valid ingredient.",
-      });
-      return;
-    }
+  if (validIngredients.length === 0) {
+    showToast({
+      type: "warning",
+      message: "Please add at least one valid ingredient.",
+    });
+    return;
+  }
 
-    const updatedRecipe: Recipe = {
-      id: recipe ? recipe.id : Date.now().toString(),
-      name,
-      category,
-      mealTypes,
-      cookingTime,
-      ingredients: validIngredients,
-      instructions,
-    };
+  const recipeToSave: Recipe = {
+    id: recipe?.id || crypto.randomUUID(),
+    name: name.trim(),
+    category,
+    mealTypes,
+    cookingTime: cookingTime.trim(),
+    ingredients: validIngredients,
+    instructions: instructions.trim(),
+  };
 
-    const updatedRecipes = recipe
-      ? recipes.map((existingRecipe) =>
-          existingRecipe.id === recipe.id ? updatedRecipe : existingRecipe
-        )
-      : [...recipes, updatedRecipe];
+  try {
+    setIsSaving(true);
 
-    setRecipes(updatedRecipes);
-    saveRecipes(updatedRecipes);
+    const savedRecipe =
+      await saveCloudRecipe(recipeToSave);
+
+    setRecipes((currentRecipes) => {
+      if (recipe) {
+        return currentRecipes.map(
+          (existingRecipe) =>
+            existingRecipe.id === recipe.id
+              ? savedRecipe
+              : existingRecipe
+        );
+      }
+
+      return [
+        ...currentRecipes,
+        savedRecipe,
+      ];
+    });
 
     showToast({
       type: "success",
@@ -116,7 +129,18 @@ export default function RecipeForm({
     });
 
     onClose();
-  };
+  } catch (error) {
+    showToast({
+      type: "error",
+      message:
+        error instanceof Error
+          ? error.message
+          : "Unable to save recipe.",
+    });
+  } finally {
+    setIsSaving(false);
+  }
+};
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
@@ -277,7 +301,14 @@ export default function RecipeForm({
             Cancel
           </Button>
 
-          <Button onClick={handleSave}>Save Recipe</Button>
+          <Button
+  onClick={handleSave}
+  disabled={isSaving}
+>
+  {isSaving
+    ? "Saving..."
+    : "Save Recipe"}
+</Button>
         </div>
       </div>
     </div>

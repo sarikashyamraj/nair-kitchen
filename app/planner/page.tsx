@@ -1,19 +1,31 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import AppLayout from "../../components/AppLayout";
 import PlannerHeader from "../../components/planner/PlannerHeader";
 import PlannerTable from "../../components/planner/PlannerTable";
 import PlannerActions from "../../components/planner/PlannerActions";
+import MobilePageHeader from "../../components/mobile/MobilePageHeader";
 
 import { ShoppingItem } from "../../types/shopping";
+import { MealPlan } from "../../types/planner";
 
 import { useKitchen } from "../../context/KitchenContext";
 import { useToast } from "../../context/ToastContext";
+
 import { aggregateIngredients } from "../../services/ingredientAggregator";
 import { generateGroceryFromRecipe } from "../../services/groceryEngine";
-import MobilePageHeader from "../../components/mobile/MobilePageHeader";
+
+import {
+  loadCloudPlanner,
+  saveCloudPlanner,
+} from "../../services/plannerService";
+
+import { loadPlanner } from "../../lib/plannerStorage";
+import { defaultPlanner } from "../../data/defaultPlanner";
+
 type MealSlot =
   | "morningDrink"
   | "breakfast"
@@ -34,25 +46,116 @@ export default function PlannerPage() {
     setPlanner,
   } = useKitchen();
 
+  const [isLoaded, setIsLoaded] =
+    useState(false);
+
+  const [isSaving, setIsSaving] =
+    useState(false);
+
+  const [loadError, setLoadError] =
+    useState("");
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadPlannerData() {
+      try {
+        setLoadError("");
+
+        const cloudPlanner =
+          await loadCloudPlanner();
+
+        let resolvedPlanner =
+          cloudPlanner;
+
+        if (cloudPlanner.length === 0) {
+          const localPlanner =
+            loadPlanner();
+
+          const plannerToMigrate =
+            localPlanner.length > 0
+              ? localPlanner
+              : defaultPlanner;
+
+          resolvedPlanner =
+            await saveCloudPlanner(
+              plannerToMigrate
+            );
+        }
+
+        if (!isMounted) return;
+
+        setPlanner(resolvedPlanner);
+      } catch (error) {
+        if (!isMounted) return;
+
+        const message =
+          error instanceof Error
+            ? error.message
+            : "Unable to load Meal Planner.";
+
+        setLoadError(message);
+
+        showToast({
+          type: "error",
+          message,
+        });
+      } finally {
+        if (isMounted) {
+          setIsLoaded(true);
+        }
+      }
+    }
+
+    void loadPlannerData();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [setPlanner, showToast]);
+
   function handleMealChange(
     dayId: string,
     mealSlot: MealSlot,
     recipeId: string
   ) {
-    setPlanner(
-      planner.map((plan) =>
+    setPlanner((currentPlanner) =>
+      currentPlanner.map((plan) =>
         plan.id === dayId
-          ? { ...plan, [mealSlot]: recipeId }
+          ? {
+              ...plan,
+              [mealSlot]: recipeId,
+            }
           : plan
       )
     );
   }
 
-  function handleSave() {
-    showToast({
-      type: "success",
-      message: "Weekly Meal Plan saved successfully.",
-    });
+  async function handleSave() {
+    try {
+      setIsSaving(true);
+
+      const savedPlanner =
+        await saveCloudPlanner(planner);
+
+      setPlanner(savedPlanner);
+
+      showToast({
+        type: "success",
+        message:
+          "Weekly Meal Plan saved successfully.",
+      });
+    } catch (error) {
+      showToast({
+        type: "error",
+        message:
+          error instanceof Error
+            ? error.message
+            : "Unable to save Weekly Meal Plan.",
+      });
+    } finally {
+      setIsSaving(false);
+    }
   }
 
   function handleGenerateGrocery() {
@@ -66,45 +169,66 @@ export default function PlannerPage() {
       ])
       .filter(Boolean) as string[];
 
-    const selectedRecipes = selectedRecipeIds
-      .map((recipeId) =>
-        recipes.find((recipe) => recipe.id === recipeId)
-      )
-      .filter(Boolean);
+    const selectedRecipes =
+      selectedRecipeIds
+        .map((recipeId) =>
+          recipes.find(
+            (recipe) =>
+              recipe.id === recipeId
+          )
+        )
+        .filter(Boolean);
 
-    const allIngredients = selectedRecipes.flatMap(
-      (recipe) => recipe!.ingredients
-    );
+    const allIngredients =
+      selectedRecipes.flatMap(
+        (recipe) =>
+          recipe!.ingredients
+      );
 
-    const aggregatedIngredients = aggregateIngredients(allIngredients);
+    const aggregatedIngredients =
+      aggregateIngredients(
+        allIngredients
+      );
 
-    const generatedItems: ShoppingItem[] = generateGroceryFromRecipe(
-      aggregatedIngredients,
-      pantry
-    );
+    const generatedItems: ShoppingItem[] =
+      generateGroceryFromRecipe(
+        aggregatedIngredients,
+        pantry
+      );
 
     if (generatedItems.length === 0) {
       showToast({
         type: "info",
-        message: "No grocery items needed. Pantry already has enough stock.",
+        message:
+          "No grocery items needed. Pantry already has enough stock.",
       });
       return;
     }
 
-    const mergedShopping = [...shopping];
+    const mergedShopping = [
+      ...shopping,
+    ];
 
-    generatedItems.forEach((newItem) => {
-      const existingIndex = mergedShopping.findIndex(
-        (item) =>
-          item.name.toLowerCase() === newItem.name.toLowerCase()
-      );
+    generatedItems.forEach(
+      (newItem) => {
+        const existingIndex =
+          mergedShopping.findIndex(
+            (item) =>
+              item.name.toLowerCase() ===
+              newItem.name.toLowerCase()
+          );
 
-      if (existingIndex >= 0) {
-        mergedShopping[existingIndex] = newItem;
-      } else {
-        mergedShopping.push(newItem);
+        if (existingIndex >= 0) {
+          mergedShopping[
+            existingIndex
+          ] = newItem;
+        } else {
+          mergedShopping.push(
+            newItem
+          );
+        }
       }
-    });
+    );
 
     setShopping(mergedShopping);
 
@@ -113,36 +237,64 @@ export default function PlannerPage() {
       message: `${generatedItems.length} grocery items generated.`,
     });
 
-    setTimeout(() => {
+    window.setTimeout(() => {
       router.push("/grocery");
     }, 1000);
   }
 
+  if (!isLoaded) {
+    return (
+      <AppLayout>
+        <div className="flex min-h-[60vh] items-center justify-center">
+          <p className="font-semibold text-[#2F6B3C]">
+            Loading Meal Planner...
+          </p>
+        </div>
+      </AppLayout>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <AppLayout>
+        <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-red-700">
+          {loadError}
+        </div>
+      </AppLayout>
+    );
+  }
+
   return (
-  <AppLayout>
-    <div className="space-y-6 pb-24 md:pb-0">
-      {/* Sticky Mobile Header */}
-      <div className="sticky top-0 z-30 -mx-4 bg-[#FFFDF8] px-4 pb-3 pt-1 md:hidden">
-        <MobilePageHeader
-          title="Weekly Planner"
-          subtitle="Plan your family meals for the week"
+    <AppLayout>
+      <div className="space-y-6 pb-24 md:pb-0">
+        <div className="sticky top-0 z-30 -mx-4 bg-[#FFFDF8] px-4 pb-3 pt-1 md:hidden">
+          <MobilePageHeader
+            title="Weekly Planner"
+            subtitle="Plan your family meals for the week"
+          />
+        </div>
+
+        <PlannerHeader />
+
+        <PlannerTable
+          plans={planner}
+          recipes={recipes}
+          onChange={handleMealChange}
         />
+
+        <PlannerActions
+          onSave={handleSave}
+          onGenerateGrocery={
+            handleGenerateGrocery
+          }
+        />
+
+        {isSaving && (
+          <p className="text-center text-sm font-medium text-[#2F6B3C]">
+            Saving your weekly plan...
+          </p>
+        )}
       </div>
-
-      {/* Desktop Header */}
-      <PlannerHeader />
-
-      <PlannerTable
-        plans={planner}
-        recipes={recipes}
-        onChange={handleMealChange}
-      />
-
-      <PlannerActions
-        onSave={handleSave}
-        onGenerateGrocery={handleGenerateGrocery}
-      />
-    </div>
-  </AppLayout>
-);
+    </AppLayout>
+  );
 }

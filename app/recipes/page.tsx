@@ -1,6 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import {
+  loadCloudRecipes,
+  saveCloudRecipe,
+} from "../../services/recipeService";
+
+import { loadRecipes } from "../../lib/recipeStorage";
+import { useToast } from "../../context/ToastContext";
 
 import AppLayout from "../../components/AppLayout";
 
@@ -25,7 +32,7 @@ const categories = [
 
 export default function RecipesPage() {
   const { recipes, setRecipes } = useKitchen();
-
+const { showToast } = useToast();
   const [isFormOpen, setIsFormOpen] = useState(false);
 
   const [editingRecipe, setEditingRecipe] =
@@ -35,7 +42,65 @@ export default function RecipesPage() {
 
   const [selectedCategory, setSelectedCategory] =
     useState("All");
+    const [isLoaded, setIsLoaded] = useState(false);
+const [loadError, setLoadError] = useState("");
+useEffect(() => {
+  let isMounted = true;
 
+  async function loadRecipeData() {
+    try {
+      setLoadError("");
+
+      const cloudRecipes =
+        await loadCloudRecipes();
+
+      let resolvedRecipes =
+        cloudRecipes;
+
+      if (cloudRecipes.length === 0) {
+        const localRecipes =
+          loadRecipes();
+
+        if (localRecipes.length > 0) {
+          resolvedRecipes =
+            await Promise.all(
+              localRecipes.map((recipe) =>
+                saveCloudRecipe(recipe)
+              )
+            );
+        }
+      }
+
+      if (!isMounted) return;
+
+      setRecipes(resolvedRecipes);
+    } catch (error) {
+      if (!isMounted) return;
+
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Unable to load Recipes.";
+
+      setLoadError(message);
+
+      showToast({
+        type: "error",
+        message,
+      });
+    } finally {
+      if (isMounted) {
+        setIsLoaded(true);
+      }
+    }
+  }
+
+  void loadRecipeData();
+
+  return () => {
+    isMounted = false;
+  };
+}, [setRecipes, showToast]);
   function openAddForm() {
     setEditingRecipe(null);
     setIsFormOpen(true);
@@ -45,7 +110,27 @@ export default function RecipesPage() {
     setEditingRecipe(null);
     setIsFormOpen(false);
   }
+if (!isLoaded) {
+  return (
+    <AppLayout>
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <p className="font-semibold text-[#2F6B3C]">
+          Loading Recipes...
+        </p>
+      </div>
+    </AppLayout>
+  );
+}
 
+if (loadError) {
+  return (
+    <AppLayout>
+      <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-red-700">
+        {loadError}
+      </div>
+    </AppLayout>
+  );
+}
   return (
     <AppLayout>
       <div className="space-y-6">

@@ -1,7 +1,12 @@
 import { ShoppingItem } from "../../types/shopping";
 import ShoppingDesktopTable from "./ShoppingDesktopTable";
 import ShoppingMobileCards from "./ShoppingMobileCards";
+import {
+  deleteCloudGroceryItem,
+  saveCloudGroceryItem,
+} from "../../services/groceryService";
 
+import { useToast } from "../../context/ToastContext";
 interface ShoppingTableProps {
   items: ShoppingItem[];
   setItems: React.Dispatch<React.SetStateAction<ShoppingItem[]>>;
@@ -17,6 +22,7 @@ export default function ShoppingTable({
   searchTerm,
   selectedCategory,
 }: ShoppingTableProps) {
+  const { showToast } = useToast();
   const filteredItems = items.filter((item) => {
     const matchesSearch = item.name
       .toLowerCase()
@@ -28,29 +34,66 @@ export default function ShoppingTable({
     return matchesSearch && matchesCategory;
   });
 
-  function togglePurchased(id: string) {
-    setItems(
-      items.map((item) =>
+  async function togglePurchased(id: string) {
+  const itemToUpdate = items.find(
+    (item) => item.id === id
+  );
+
+  if (!itemToUpdate) return;
+
+  try {
+    const savedItem =
+      await saveCloudGroceryItem({
+        ...itemToUpdate,
+        purchased:
+          !itemToUpdate.purchased,
+      });
+
+    setItems((currentItems) =>
+      currentItems.map((item) =>
         item.id === id
-          ? { ...item, purchased: !item.purchased }
+          ? savedItem
           : item
       )
     );
+  } catch (error) {
+    showToast({
+      type: "error",
+      message:
+        error instanceof Error
+          ? error.message
+          : "Unable to update Grocery item.",
+    });
   }
+}
 
-  function deleteItem(id: string) {
-    if (!confirm("Delete this item?")) return;
+  async function deleteItem(id: string) {
+  if (!confirm("Delete this item?")) return;
 
-    setItems(items.filter((item) => item.id !== id));
-  }
+  try {
+    await deleteCloudGroceryItem(id);
 
-  if (filteredItems.length === 0) {
-    return (
-      <div className="rounded-xl bg-white p-8 text-center text-gray-500 shadow">
-        No grocery items found.
-      </div>
+    setItems((currentItems) =>
+      currentItems.filter(
+        (item) => item.id !== id
+      )
     );
+
+    showToast({
+      type: "success",
+      message:
+        "Grocery item deleted.",
+    });
+  } catch (error) {
+    showToast({
+      type: "error",
+      message:
+        error instanceof Error
+          ? error.message
+          : "Unable to delete Grocery item.",
+    });
   }
+}
 
   return (
     <>

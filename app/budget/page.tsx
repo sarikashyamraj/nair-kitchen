@@ -12,10 +12,16 @@ import {
 } from "../../types/budget";
 
 import {
+  loadCloudBudgets,
+  loadCloudTransactions,
+  saveCloudBudget,
+  saveCloudTransaction,
+  deleteCloudTransaction,
+} from "../../services/budgetService";
+
+import {
   loadGroceryTransactions,
   loadMonthlyBudgets,
-  saveGroceryTransactions,
-  saveMonthlyBudgets,
 } from "../../lib/budgetStorage";
 import { loadPreferences } from "../../lib/preferencesStorage";
 import { formatDateByPreference } from "../../lib/dateFormatter";
@@ -74,45 +80,105 @@ const [dateFormat, setDateFormat] = useState<
 >("DD/MM/YYYY");
 
 const [isLoaded, setIsLoaded] = useState(false);
-
+const [loadError, setLoadError] = useState("");
+const [isSaving, setIsSaving] = useState(false);
   useEffect(() => {
-  function refreshPreferences() {
-    const preferences = loadPreferences();
+  let isMounted = true;
 
-    setCurrency(preferences.currency);
-    setDateFormat(preferences.dateFormat);
+  async function loadBudgetData() {
+    try {
+      function refreshPreferences() {
+        const preferences = loadPreferences();
+
+        setCurrency(preferences.currency);
+        setDateFormat(preferences.dateFormat);
+      }
+
+      refreshPreferences();
+
+      let cloudBudgets =
+        await loadCloudBudgets();
+
+      let cloudTransactions =
+        await loadCloudTransactions();
+
+      // First-time migration
+      if (
+        cloudBudgets.length === 0
+      ) {
+        const localBudgets =
+          loadMonthlyBudgets();
+
+        if (localBudgets.length > 0) {
+          cloudBudgets =
+            await Promise.all(
+              localBudgets.map(
+                saveCloudBudget
+              )
+            );
+        }
+      }
+
+      if (
+        cloudTransactions.length ===
+        0
+      ) {
+        const localTransactions =
+          loadGroceryTransactions();
+
+        if (
+          localTransactions.length >
+          0
+        ) {
+          cloudTransactions =
+            await Promise.all(
+              localTransactions.map(
+                saveCloudTransaction
+              )
+            );
+        }
+      }
+
+      if (!isMounted) return;
+
+      setBudgets(cloudBudgets);
+      setTransactions(
+        cloudTransactions
+      );
+
+      window.addEventListener(
+        "preferences-updated",
+        refreshPreferences
+      );
+    } catch (error) {
+      if (!isMounted) return;
+
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Unable to load Budget.";
+
+      setLoadError(message);
+
+      showToast({
+        type: "error",
+        message,
+      });
+    } finally {
+      if (isMounted) {
+        setIsLoaded(true);
+      }
+    }
   }
 
-  refreshPreferences();
-
-  setBudgets(loadMonthlyBudgets());
-  setTransactions(loadGroceryTransactions());
-
-  setIsLoaded(true);
-
-  window.addEventListener(
-    "preferences-updated",
-    refreshPreferences
-  );
+  void loadBudgetData();
 
   return () => {
-    window.removeEventListener(
-      "preferences-updated",
-      refreshPreferences
-    );
+    isMounted = false;
   };
-}, []);
-  useEffect(() => {
-    if (isLoaded) {
-      saveMonthlyBudgets(budgets);
-    }
-  }, [budgets, isLoaded]);
-
-  useEffect(() => {
-    if (isLoaded) {
-      saveGroceryTransactions(transactions);
-    }
-  }, [transactions, isLoaded]);
+}, [showToast]);
+  
+  
 
   const selectedBudget = budgets.find(
     (budget) => budget.month === selectedMonth
@@ -148,51 +214,85 @@ const [isLoaded, setIsLoaded] = useState(false);
         )
       : 0;
 
-  function handleSaveBudget() {
+  async function handleSaveBudget() {
   const amount = Number(budgetAmount);
 
   if (!amount || amount <= 0) {
     showToast({
-  type: "warning",
-  message: "Please enter a valid monthly budget.",
-});
+      type: "warning",
+      message:
+        "Please enter a valid monthly budget.",
+    });
     return;
   }
 
-  const existingBudget = budgets.find(
-    (budget) => budget.month === selectedMonth
-  );
+  try {
+    setIsSaving(true);
 
-  if (existingBudget) {
-    setBudgets(
-      budgets.map((budget) =>
+    const existingBudget = budgets.find(
+      (budget) =>
         budget.month === selectedMonth
-          ? {
-              ...budget,
-              amount,
-              currency,
-            }
-          : budget
-      )
     );
-  } else {
-    setBudgets([
-      ...budgets,
-      {
-        id: crypto.randomUUID(),
-        month: selectedMonth,
-        amount,
-        currency,
-      },
-    ]);
+
+    const budgetToSave: MonthlyBudget = {
+      id:
+        existingBudget?.id ||
+        crypto.randomUUID(),
+      month: selectedMonth,
+      amount,
+      currency,
+    };
+
+    const savedBudget =
+      await saveCloudBudget(
+        budgetToSave
+      );
+
+    setBudgets(
+      (currentBudgets) => {
+        const alreadyExists =
+          currentBudgets.some(
+            (budget) =>
+              budget.month ===
+              selectedMonth
+          );
+
+        if (alreadyExists) {
+          return currentBudgets.map(
+            (budget) =>
+              budget.month ===
+              selectedMonth
+                ? savedBudget
+                : budget
+          );
+        }
+
+        return [
+          ...currentBudgets,
+          savedBudget,
+        ];
+      }
+    );
+
+    showToast({
+      type: "success",
+      message: `Budget for ${formatMonthLabel(
+        selectedMonth
+      )} saved successfully.`,
+    });
+
+    setBudgetAmount("");
+  } catch (error) {
+    showToast({
+      type: "error",
+      message:
+        error instanceof Error
+          ? error.message
+          : "Unable to save monthly budget.",
+    });
+  } finally {
+    setIsSaving(false);
   }
-showToast({
-  type: "success",
-  message: `Budget for ${formatMonthLabel(
-    selectedMonth
-  )} saved successfully.`,
-});
-  setBudgetAmount("");
 }
 
   function handleDeleteTransaction(
@@ -200,36 +300,81 @@ showToast({
 ) {
   setTransactionToDelete(transaction);
 }
-function handleSaveEditedTransaction(data: {
-  date: string;
-  store: string;
-  amount: number;
-  description: string;
-  notes: string;
-}) {
+async function handleSaveEditedTransaction(
+  data: {
+    date: string;
+    store: string;
+    amount: number;
+    description: string;
+    notes: string;
+  }
+) {
   if (!transactionToEdit) return;
 
-  setTransactions((currentTransactions) =>
-    currentTransactions.map((transaction) =>
-      transaction.id === transactionToEdit.id
-        ? {
-            ...transaction,
-            date: data.date,
-            store: data.store,
-            amount: data.amount,
-            description: data.description,
-            notes: data.notes,
-          }
-        : transaction
-    )
+  try {
+    setIsSaving(true);
+
+    const savedTransaction =
+      await saveCloudTransaction({
+        ...transactionToEdit,
+        date: data.date,
+        store: data.store,
+        amount: data.amount,
+        description:
+          data.description,
+        notes: data.notes,
+      });
+
+    setTransactions(
+      (currentTransactions) =>
+        currentTransactions.map(
+          (transaction) =>
+            transaction.id ===
+            transactionToEdit.id
+              ? savedTransaction
+              : transaction
+        )
+    );
+
+    setTransactionToEdit(null);
+
+    showToast({
+      type: "success",
+      message:
+        "Grocery expense updated successfully.",
+    });
+  } catch (error) {
+    showToast({
+      type: "error",
+      message:
+        error instanceof Error
+          ? error.message
+          : "Unable to update grocery expense.",
+    });
+  } finally {
+    setIsSaving(false);
+  }
+}
+if (!isLoaded) {
+  return (
+    <AppLayout>
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <p className="font-semibold text-[#2F6B3C]">
+          Loading Budget...
+        </p>
+      </div>
+    </AppLayout>
   );
+}
 
-  setTransactionToEdit(null);
-
-  showToast({
-    type: "success",
-    message: "Grocery expense updated successfully.",
-  });
+if (loadError) {
+  return (
+    <AppLayout>
+      <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-red-700">
+        {loadError}
+      </div>
+    </AppLayout>
+  );
 }
 return (
   <AppLayout>
@@ -342,12 +487,15 @@ return (
             </div>
 
             <button
-              type="button"
-              onClick={handleSaveBudget}
-              className="rounded-xl bg-[#2F6B3C] px-5 py-3 font-semibold text-white"
-            >
-              Save Budget
-            </button>
+  type="button"
+  onClick={handleSaveBudget}
+  disabled={isSaving}
+  className="rounded-xl bg-[#2F6B3C] px-5 py-3 font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+>
+  {isSaving
+    ? "Saving..."
+    : "Save Budget"}
+</button>
           </div>
 
           <div className="mt-5 h-4 w-full overflow-hidden rounded-full bg-[#F4E8D0]">
@@ -496,26 +644,44 @@ return (
           onCancel={() =>
             setTransactionToDelete(null)
           }
-          onConfirm={() => {
-            if (transactionToDelete) {
-              setTransactions(
-                (currentTransactions) =>
-                  currentTransactions.filter(
-                    (transaction) =>
-                      transaction.id !==
-                      transactionToDelete.id
-                  )
-              );
+          onConfirm={async () => {
+  if (!transactionToDelete) return;
 
-              showToast({
-                type: "success",
-                message:
-                  "Grocery expense deleted successfully.",
-              });
-            }
+  try {
+    setIsSaving(true);
 
-            setTransactionToDelete(null);
-          }}
+    await deleteCloudTransaction(
+      transactionToDelete.id
+    );
+
+    setTransactions(
+      (currentTransactions) =>
+        currentTransactions.filter(
+          (transaction) =>
+            transaction.id !==
+            transactionToDelete.id
+        )
+    );
+
+    setTransactionToDelete(null);
+
+    showToast({
+      type: "success",
+      message:
+        "Grocery expense deleted successfully.",
+    });
+  } catch (error) {
+    showToast({
+      type: "error",
+      message:
+        error instanceof Error
+          ? error.message
+          : "Unable to delete grocery expense.",
+    });
+  } finally {
+    setIsSaving(false);
+  }
+}}
         />
       </div>
     </AppLayout>

@@ -1,7 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-
+import {
+  deleteCloudGroceryItems,
+  loadCloudGrocery,
+  saveCloudGroceryItems,
+} from "../../services/groceryService";
+import { saveCloudPantryItem } from "../../services/pantryService";
+import { loadShopping } from "../../lib/shoppingStorage";
+import { useToast } from "../../context/ToastContext";
 import AppLayout from "../../components/AppLayout";
 import Toast from "../../components/common/Toast";
 
@@ -62,7 +69,7 @@ export default function GroceryPage() {
     shopping,
     setShopping,
   } = useKitchen();
-
+const { showToast: showAppToast } = useToast();
   const [toastMessage, setToastMessage] = useState("");
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isCheckoutOpen, setIsCheckoutOpen] =
@@ -78,7 +85,8 @@ export default function GroceryPage() {
   const [currency, setCurrency] = useState("AED");
   const [lastStore, setLastStore] =
     useState("Lulu Hypermarket");
-
+const [isLoaded, setIsLoaded] = useState(false);
+const [loadError, setLoadError] = useState("");
   const purchasedItems = shopping.filter(
     (item) => item.purchased
   );
@@ -86,7 +94,61 @@ export default function GroceryPage() {
   const notPurchasedItems = shopping.filter(
     (item) => !item.purchased
   );
+useEffect(() => {
+  let isMounted = true;
 
+  async function loadGroceryData() {
+    try {
+      setLoadError("");
+
+      const cloudGrocery =
+        await loadCloudGrocery();
+
+      let resolvedGrocery =
+        cloudGrocery;
+
+      if (cloudGrocery.length === 0) {
+        const localGrocery =
+          loadShopping();
+
+        if (localGrocery.length > 0) {
+          resolvedGrocery =
+            await saveCloudGroceryItems(
+              localGrocery
+            );
+        }
+      }
+
+      if (!isMounted) return;
+
+      setShopping(resolvedGrocery);
+    } catch (error) {
+      if (!isMounted) return;
+
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Unable to load Grocery.";
+
+      setLoadError(message);
+
+      showAppToast({
+        type: "error",
+        message,
+      });
+    } finally {
+      if (isMounted) {
+        setIsLoaded(true);
+      }
+    }
+  }
+
+  void loadGroceryData();
+
+  return () => {
+    isMounted = false;
+  };
+}, [setShopping, showAppToast]);
   useEffect(() => {
   function refreshPreferences() {
     const preferences = loadPreferences();
@@ -140,35 +202,72 @@ export default function GroceryPage() {
     setIsCheckoutOpen(true);
   }
 
-  function handleCompleteShopping(data: CheckoutData) {
-    const sessionId = crypto.randomUUID();
+  async function handleCompleteShopping(
+  data: CheckoutData
+) {
+  const sessionId = crypto.randomUUID();
 
-    const shoppingSession: ShoppingSession = {
-      id: sessionId,
-      date: data.date,
-      store: data.store,
-      amount: data.amount,
-      currency,
-      notes: data.notes,
-      purchasedItems,
-      purchasedItemCount: purchasedItems.length,
-      remainingItemCount: notPurchasedItems.length,
-      completedAt: new Date().toISOString(),
-    };
+  const shoppingSession: ShoppingSession = {
+    id: sessionId,
+    date: data.date,
+    store: data.store,
+    amount: data.amount,
+    currency,
+    notes: data.notes,
+    purchasedItems,
+    purchasedItemCount:
+      purchasedItems.length,
+    remainingItemCount:
+      notPurchasedItems.length,
+    completedAt:
+      new Date().toISOString(),
+  };
 
-    const groceryTransaction: GroceryTransaction = {
-      id: crypto.randomUUID(),
-      shoppingSessionId: sessionId,
-      date: data.date,
-      amount: data.amount,
-      currency,
-      description: data.notes || "Grocery Shopping",
-      store: data.store,
-      notes: data.notes,
-      itemCount: purchasedItems.length,
-    };
+  const groceryTransaction: GroceryTransaction = {
+    id: crypto.randomUUID(),
+    shoppingSessionId: sessionId,
+    date: data.date,
+    amount: data.amount,
+    currency,
+    description:
+      data.notes ||
+      "Grocery Shopping",
+    store: data.store,
+    notes: data.notes,
+    itemCount:
+      purchasedItems.length,
+  };
 
-    const existingSessions = loadShoppingSessions();
+  try {
+    const result =
+      updatePantryFromPurchasedItems(
+        pantry,
+        shopping
+      );
+
+    // Save all changed Pantry quantities
+    // to Supabase before updating the screen.
+    const savedPantry =
+      await Promise.all(
+        result.updatedPantry.map(
+          (item) =>
+            saveCloudPantryItem(item)
+        )
+      );
+
+    // Remove all purchased Grocery items
+    // from Supabase.
+    await deleteCloudGroceryItems(
+      purchasedItems.map(
+        (item) => item.id
+      )
+    );
+
+    // Shopping Sessions and Budget remain
+    // temporarily in Local Storage until
+    // their own cloud-integration tasks.
+    const existingSessions =
+      loadShoppingSessions();
 
     saveShoppingSessions([
       shoppingSession,
@@ -190,13 +289,11 @@ export default function GroceryPage() {
 
     setLastStore(data.store);
 
-    const result = updatePantryFromPurchasedItems(
-      pantry,
-      shopping
-    );
+    setPantry(savedPantry);
 
-    setPantry(result.updatedPantry);
-    setShopping(result.remainingShopping);
+    setShopping(
+      result.remainingShopping
+    );
 
     setIsCheckoutOpen(false);
 
@@ -209,8 +306,26 @@ export default function GroceryPage() {
         2
       )} recorded in Budget.`
     );
+  } catch (error) {
+    showAppToast({
+      type: "error",
+      message:
+        error instanceof Error
+          ? error.message
+          : "Unable to complete shopping.",
+    });
   }
+}
 
+if (loadError) {
+  return (
+    <AppLayout>
+      <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-red-700">
+        {loadError}
+      </div>
+    </AppLayout>
+  );
+}
   return (
     <AppLayout>
       <div className="space-y-6">
