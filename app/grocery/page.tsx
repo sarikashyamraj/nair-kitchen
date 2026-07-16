@@ -11,7 +11,8 @@ import { loadShopping } from "../../lib/shoppingStorage";
 import { useToast } from "../../context/ToastContext";
 import AppLayout from "../../components/AppLayout";
 import Toast from "../../components/common/Toast";
-
+import { saveCloudShoppingSession } from "../../services/shoppingSessionService";
+import { saveCloudTransaction } from "../../services/budgetService";
 import ShoppingHeader from "../../components/shopping/ShoppingHeader";
 import ShoppingStats from "../../components/shopping/ShoppingStats";
 import ShoppingTable from "../../components/shopping/ShoppingTable";
@@ -32,15 +33,7 @@ import { GroceryTransaction } from "../../types/budget";
 import { useKitchen } from "../../context/KitchenContext";
 import { updatePantryFromPurchasedItems } from "../../services/finishShopping";
 
-import {
-  loadShoppingSessions,
-  saveShoppingSessions,
-} from "../../lib/shoppingSessionStorage";
 
-import {
-  loadGroceryTransactions,
-  saveGroceryTransactions,
-} from "../../lib/budgetStorage";
 
 import { loadPreferences } from "../../lib/preferencesStorage";
 
@@ -205,39 +198,6 @@ useEffect(() => {
   async function handleCompleteShopping(
   data: CheckoutData
 ) {
-  const sessionId = crypto.randomUUID();
-
-  const shoppingSession: ShoppingSession = {
-    id: sessionId,
-    date: data.date,
-    store: data.store,
-    amount: data.amount,
-    currency,
-    notes: data.notes,
-    purchasedItems,
-    purchasedItemCount:
-      purchasedItems.length,
-    remainingItemCount:
-      notPurchasedItems.length,
-    completedAt:
-      new Date().toISOString(),
-  };
-
-  const groceryTransaction: GroceryTransaction = {
-    id: crypto.randomUUID(),
-    shoppingSessionId: sessionId,
-    date: data.date,
-    amount: data.amount,
-    currency,
-    description:
-      data.notes ||
-      "Grocery Shopping",
-    store: data.store,
-    notes: data.notes,
-    itemCount:
-      purchasedItems.length,
-  };
-
   try {
     const result =
       updatePantryFromPurchasedItems(
@@ -245,8 +205,6 @@ useEffect(() => {
         shopping
       );
 
-    // Save all changed Pantry quantities
-    // to Supabase before updating the screen.
     const savedPantry =
       await Promise.all(
         result.updatedPantry.map(
@@ -255,32 +213,52 @@ useEffect(() => {
         )
       );
 
-    // Remove all purchased Grocery items
-    // from Supabase.
     await deleteCloudGroceryItems(
       purchasedItems.map(
         (item) => item.id
       )
     );
 
-    // Shopping Sessions and Budget remain
-    // temporarily in Local Storage until
-    // their own cloud-integration tasks.
-    const existingSessions =
-      loadShoppingSessions();
+    const shoppingSessionToSave: ShoppingSession = {
+      id: crypto.randomUUID(),
+      date: data.date,
+      store: data.store,
+      amount: data.amount,
+      currency,
+      notes: data.notes,
+      purchasedItems,
+      purchasedItemCount:
+        purchasedItems.length,
+      remainingItemCount:
+        notPurchasedItems.length,
+      completedAt:
+        new Date().toISOString(),
+    };
 
-    saveShoppingSessions([
-      shoppingSession,
-      ...existingSessions,
-    ]);
+    const savedShoppingSession =
+      await saveCloudShoppingSession(
+        shoppingSessionToSave
+      );
 
-    const existingTransactions =
-      loadGroceryTransactions();
+    const groceryTransactionToSave: GroceryTransaction = {
+      id: crypto.randomUUID(),
+      shoppingSessionId:
+        savedShoppingSession.id,
+      date: data.date,
+      amount: data.amount,
+      currency,
+      description:
+        data.notes ||
+        "Grocery Shopping",
+      store: data.store,
+      notes: data.notes,
+      itemCount:
+        purchasedItems.length,
+    };
 
-    saveGroceryTransactions([
-      groceryTransaction,
-      ...existingTransactions,
-    ]);
+    await saveCloudTransaction(
+      groceryTransactionToSave
+    );
 
     localStorage.setItem(
       "nair-kitchen-last-store",
@@ -288,13 +266,10 @@ useEffect(() => {
     );
 
     setLastStore(data.store);
-
     setPantry(savedPantry);
-
     setShopping(
       result.remainingShopping
     );
-
     setIsCheckoutOpen(false);
 
     window.dispatchEvent(

@@ -7,9 +7,9 @@ import AppLayout from "../components/AppLayout";
 import QuickActions from "../components/dashboard/QuickActions";
 import { useKitchen } from "../context/KitchenContext";
 import {
-  loadGroceryTransactions,
-  loadMonthlyBudgets,
-} from "../lib/budgetStorage";
+  loadCloudBudgets,
+  loadCloudTransactions,
+} from "../services/budgetService";
 
 import { loadPreferences } from "../lib/preferencesStorage";
 
@@ -41,57 +41,136 @@ export default function Home() {
 const [monthlyBudget, setMonthlyBudget] = useState(0);
 const [monthlySpent, setMonthlySpent] = useState(0);
 const [budgetCurrency, setBudgetCurrency] = useState("AED");
+const [isBudgetLoaded, setIsBudgetLoaded] =
+  useState(false);
+
+const [budgetLoadError, setBudgetLoadError] =
+  useState("");
 useEffect(() => {
-  function refreshBudgetSummary() {
-    const currentMonth = getMonthKey(new Date());
-    const preferences = loadPreferences();
+  let isMounted = true;
 
-    const budgets = loadMonthlyBudgets();
-    const transactions = loadGroceryTransactions();
+  async function refreshBudgetSummary() {
+    try {
+      const currentMonth =
+        getMonthKey(new Date());
 
-    const currentBudget = budgets.find(
-      (budget) => budget.month === currentMonth
-    );
+      const preferences =
+        loadPreferences();
 
-    const currentMonthSpent = transactions
-      .filter((transaction) =>
-        transaction.date.startsWith(currentMonth)
-      )
-      .reduce(
-        (total, transaction) =>
-          total + transaction.amount,
-        0
+      const [
+        budgets,
+        transactions,
+      ] = await Promise.all([
+        loadCloudBudgets(),
+        loadCloudTransactions(),
+      ]);
+
+      if (!isMounted) return;
+
+      const currentBudget =
+        budgets.find(
+          (budget) =>
+            budget.month ===
+            currentMonth
+        );
+
+      const currentMonthSpent =
+        transactions
+          .filter((transaction) =>
+            transaction.date.startsWith(
+              currentMonth
+            )
+          )
+          .reduce(
+            (total, transaction) =>
+              total +
+              transaction.amount,
+            0
+          );
+
+      setMonthlyBudget(
+        currentBudget?.amount || 0
       );
 
-    setMonthlyBudget(currentBudget?.amount || 0);
-setMonthlySpent(currentMonthSpent);
-setBudgetCurrency(preferences.currency);
+      setMonthlySpent(
+        currentMonthSpent
+      );
+
+      setBudgetCurrency(
+        preferences.currency
+      );
+
+      setBudgetLoadError("");
+    } catch (error) {
+      if (!isMounted) return;
+
+      setBudgetLoadError(
+        error instanceof Error
+          ? error.message
+          : "Unable to load dashboard budget."
+      );
+    } finally {
+      if (isMounted) {
+        setIsBudgetLoaded(true);
+      }
+    }
   }
 
-  refreshBudgetSummary();
+  function handleBudgetUpdated() {
+    void refreshBudgetSummary();
+  }
+
+  function handlePreferencesUpdated() {
+    void refreshBudgetSummary();
+  }
+
+  void refreshBudgetSummary();
 
   window.addEventListener(
     "budget-updated",
-    refreshBudgetSummary
+    handleBudgetUpdated
   );
 
   window.addEventListener(
     "preferences-updated",
-    refreshBudgetSummary
+    handlePreferencesUpdated
   );
 
   return () => {
+    isMounted = false;
+
     window.removeEventListener(
       "budget-updated",
-      refreshBudgetSummary
+      handleBudgetUpdated
     );
 
     window.removeEventListener(
       "preferences-updated",
-      refreshBudgetSummary
+      handlePreferencesUpdated
     );
   };
 }, []);
+if (!isBudgetLoaded) {
+  return (
+    <AppLayout>
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <p className="font-semibold text-[#2F6B3C]">
+          Loading Dashboard...
+        </p>
+      </div>
+    </AppLayout>
+  );
+}
+
+if (budgetLoadError) {
+  return (
+    <AppLayout>
+      <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-red-700">
+        {budgetLoadError}
+      </div>
+    </AppLayout>
+  );
+}
   const currentDay = new Date().toLocaleDateString("en-US", {
     weekday: "long",
   });

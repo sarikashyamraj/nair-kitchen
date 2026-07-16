@@ -499,3 +499,249 @@ Built with ❤️ using Next.js, React, TypeScript, and Tailwind CSS.
 # 📄 License
 
 This project is currently developed for learning, personal productivity, portfolio development, and future product exploration.
+
+# 🍽️ Kitchen Brain
+
+**Kitchen Brain** is a cloud-powered family kitchen management application designed to simplify meal planning, pantry management, grocery shopping, and household budgeting.
+
+It helps families stay organized by keeping recipes, pantry inventory, shopping lists, meal plans, and grocery expenses synchronized across devices using Supabase.
+
+---
+
+# Current Version
+
+**v0.9.0 – Cloud Core Complete**
+
+---
+
+# Features
+
+## 👤 User Management
+
+- Secure Authentication
+- User Profiles
+- Family Members
+- Profile Photos
+- Family Member Photos
+
+---
+
+## ⚙️ Settings
+
+- Currency
+- Date Format
+- Measurement System
+- User Preferences
+- Cloud Synchronization
+
+---
+
+## 🥫 Pantry
+
+- Add Ingredients
+- Edit Ingredients
+- Delete Ingredients
+- Search
+- Category Filter
+- Low Stock Alerts
+- Pantry Statistics
+
+---
+
+## 📖 Recipes
+
+- Recipe Library
+- Multiple Meal Types
+- Categories
+- Ingredients
+- Instructions
+
+---
+
+## 📅 Weekly Meal Planner
+
+- Weekly Planning
+- Planner Persistence
+- Recipe Assignment
+- Grocery Generation
+
+---
+
+## 🛒 Grocery
+
+- Grocery List
+- Planner Integration
+- Purchased Tracking
+- Pantry Synchronization
+- Complete Shopping Workflow
+
+---
+
+## 💰 Budget
+
+- Monthly Budget
+- Grocery Expenses
+- Shopping Transactions
+- Spending Summary
+
+---
+
+# Tech Stack
+
+## Frontend
+
+- Next.js 16
+- React
+- TypeScript
+- Tailwind CSS
+
+## Backend
+
+- Supabase Authentication
+- PostgreSQL
+- Supabase Storage
+- Row Level Security (RLS)
+
+---
+
+# Project Architecture
+
+```
+
+UI
+
+↓
+
+KitchenContext
+
+↓
+
+Service Layer
+
+↓
+
+Supabase
+
+```
+
+---
+
+# Folder Structure
+
+```
+
+app/
+components/
+context/
+services/
+types/
+lib/
+constants/
+utils/
+data/
+
+```
+
+---
+
+# Cloud Services
+
+- profileService
+- preferencesService
+- pantryService
+- recipeService
+- plannerService
+- groceryService
+- budgetService
+- shoppingSessionService
+
+---
+
+# Current Status
+
+## ✅ Completed
+
+- Authentication
+- User Profiles
+- Family Members
+- Settings
+- Pantry
+- Recipes
+- Weekly Planner
+- Grocery
+- Budget
+- Shopping Session Services
+
+---
+
+## 🚧 In Progress
+
+- Dashboard Cloud Integration
+- Header Synchronization
+- Cloud Cleanup
+- Final Regression Testing
+
+---
+
+## 📋 Planned
+
+### Version 1.0
+
+- Dashboard
+- Production Deployment
+- Performance Optimization
+
+### Version 1.1
+
+- AI Meal Suggestions
+- Receipt Scanner
+- Shopping Analytics
+- Mobile App
+
+---
+
+# Installation
+
+```bash
+git clone <repository>
+
+cd kitchen-brain
+
+npm install
+
+npm run dev
+```
+
+---
+
+# Environment Variables
+
+Create a `.env.local` file.
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=
+
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+```
+
+---
+
+# Build
+
+```bash
+npm run build
+```
+# Project Journey
+
+Kitchen Brain started as a Local Storage based personal meal planning application.
+
+It has now evolved into a cloud-powered platform using Supabase, providing secure authentication, synchronized family data, pantry management, recipes, meal planning, grocery tracking, and budgeting across multiple devices.
+
+The project continues to evolve toward Version 1.0 with a focus on performance, reliability, and user experience.
+---
+
+# License
+
+Personal Project
+
+Developed by **Sarika Raj**

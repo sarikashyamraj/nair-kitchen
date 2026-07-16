@@ -189,3 +189,100 @@ All notable changes to Kitchen Brain will be documented in this file.
 - Context API.
 - Local Storage.
 - GitHub repository.
+
+# [0.9.0] - Cloud Core Complete
+Date: July 2026
+
+## Added
+
+### Authentication
+- User authentication with Supabase
+- Password reset
+- Session management
+- Protected routes
+
+### User Management
+- Cloud Profile
+- Family Members
+- Profile photo uploads
+- Family member photo uploads
+
+### Preferences
+- Cloud synced user preferences
+- Currency
+- Date format
+- Measurement system preference
+
+### Pantry
+- Cloud Pantry
+- Add/Edit/Delete ingredients
+- Search
+- Category filter
+- Low stock alerts
+
+### Recipes
+- Cloud Recipes
+- Recipe ingredients
+- Multiple meal types
+- Recipe categories
+
+### Weekly Planner
+- Cloud Meal Planner
+- Planner persistence
+- Grocery generation
+
+### Grocery
+- Cloud Grocery
+- Purchased status
+- Planner integration
+- Pantry synchronization
+
+### Budget
+- Cloud Monthly Budget
+- Grocery expense tracking
+- Transaction management
+
+### Shopping Sessions
+- Shopping session service
+- Shopping history architecture
+
+## Architecture
+
+Added cloud service layer:
+
+- profileService
+- preferencesService
+- pantryService
+- recipeService
+- plannerService
+- groceryService
+- budgetService
+- shoppingSessionService
+
+Application architecture:
+
+UI
+↓
+KitchenContext
+↓
+Services
+↓
+Supabase
+
+## Security
+
+- Row Level Security
+- Supabase Storage
+- Secure image uploads
+- User isolation
+
+## Fixed
+
+- Planner persistence
+- Pantry synchronization
+- Grocery synchronization
+- Profile image persistence
+- Family image persistence
+- Avatar synchronization
+- Budget persistence
+- Password recovery

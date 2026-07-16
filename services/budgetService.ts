@@ -196,8 +196,9 @@ export async function saveCloudTransaction(
    * error from old Local Storage session IDs.
    */
   const payload = {
-    user_id: user.id,
-    shopping_session_id: null,
+  user_id: user.id,
+  shopping_session_id:
+    transaction.shoppingSessionId || null,
     shopping_date: transaction.date,
     amount: transaction.amount,
     currency_code: transaction.currency,
