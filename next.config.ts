@@ -5,8 +5,16 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: path.resolve(__dirname),
   },
-  typescript: {
-    ignoreBuildErrors: true,
+
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "nuflwpefgwelcshqsacb.supabase.co",
+        pathname:
+          "/storage/v1/object/public/profile-images/**",
+      },
+    ],
   },
 };
 

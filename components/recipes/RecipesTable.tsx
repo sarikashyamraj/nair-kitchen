@@ -1,8 +1,13 @@
 import { useState } from "react";
+import { deleteCloudRecipe } from "../../services/recipeService";
 import { Recipe } from "../../types/recipe";
 import { addIngredientsToGrocery } from "../../lib/groceryService";
 import ConfirmModal from "../common/ConfirmModal";
 import { useToast } from "../../context/ToastContext";
+import { useKitchen } from "../../context/KitchenContext";
+import { saveCloudGroceryItems } from "../../services/groceryService";
+import RecipesDesktopTable from "./RecipesDesktopTable";
+import RecipesMobileCards from "./RecipesMobileCards";
 
 interface RecipesTableProps {
   recipes: Recipe[];
@@ -20,13 +25,14 @@ export default function RecipesTable({
   selectedCategory,
 }: RecipesTableProps) {
   const { showToast } = useToast();
-
+  const { shopping, setShopping } =
+  useKitchen();
   const [recipeToDelete, setRecipeToDelete] = useState<Recipe | null>(null);
 
   const filteredRecipes = recipes.filter((recipe) => {
     const matchesSearch = recipe.name
       .toLowerCase()
-      .includes(searchTerm.toLowerCase());
+      .includes(searchTerm.trim().toLowerCase());
 
     const matchesCategory =
       selectedCategory === "All" || recipe.category === selectedCategory;
@@ -34,7 +40,7 @@ export default function RecipesTable({
     return matchesSearch && matchesCategory;
   });
 
-  const getMealTypesText = (recipe: Recipe) => {
+  function getMealTypesText(recipe: Recipe) {
     const oldRecipe = recipe as Recipe & { mealType?: string };
 
     if (recipe.mealTypes && recipe.mealTypes.length > 0) {
@@ -42,80 +48,87 @@ export default function RecipesTable({
     }
 
     return oldRecipe.mealType || "Not set";
-  };
+  }
 
-  const handleAddToGrocery = (recipe: Recipe) => {
-    addIngredientsToGrocery(recipe.ingredients);
+  async function handleAddToGrocery(
+  recipe: Recipe
+) {
+  try {
+    const mergedGrocery =
+      addIngredientsToGrocery(
+        shopping,
+        recipe.ingredients
+      );
+
+    const newItems =
+      mergedGrocery.filter(
+        (mergedItem) =>
+          !shopping.some(
+            (existingItem) =>
+              existingItem.id ===
+              mergedItem.id
+          )
+      );
+
+    if (newItems.length === 0) {
+      showToast({
+        type: "info",
+        message:
+          "All ingredients are already in Grocery.",
+      });
+      return;
+    }
+
+    const savedNewItems =
+      await saveCloudGroceryItems(
+        newItems
+      );
+
+    setShopping((currentItems) => [
+      ...currentItems,
+      ...savedNewItems,
+    ]);
 
     showToast({
       type: "success",
       message: `"${recipe.name}" ingredients added to Grocery.`,
     });
-  };
+  } catch (error) {
+    showToast({
+      type: "error",
+      message:
+        error instanceof Error
+          ? error.message
+          : "Unable to add ingredients to Grocery.",
+    });
+  }
+}
 
   return (
     <>
-      <div className="bg-white rounded-xl shadow overflow-hidden">
-        <table className="w-full">
-          <thead className="bg-gray-100">
-            <tr className="text-left">
-              <th className="p-4">Recipe</th>
-              <th className="p-4">Category</th>
-              <th className="p-4">Suitable For</th>
-              <th className="p-4">Time</th>
-              <th className="p-4">Ingredients</th>
-              <th className="p-4">Actions</th>
-            </tr>
-          </thead>
+      {filteredRecipes.length === 0 ? (
+        <div className="rounded-xl bg-white p-8 text-center text-gray-500 shadow">
+          No recipes found.
+        </div>
+      ) : (
+        <>
+          <RecipesMobileCards
+            recipes={filteredRecipes}
+            getMealTypesText={getMealTypesText}
+            onAddToGrocery={handleAddToGrocery}
+            onEdit={onEdit}
+            onDelete={setRecipeToDelete}
+          />
 
-          <tbody>
-            {filteredRecipes.length === 0 ? (
-              <tr>
-                <td colSpan={6} className="text-center py-8 text-gray-500">
-                  No recipes found.
-                </td>
-              </tr>
-            ) : (
-              filteredRecipes.map((recipe) => (
-                <tr key={recipe.id} className="border-t hover:bg-gray-50">
-                  <td className="p-4 font-medium">{recipe.name}</td>
-
-                  <td className="p-4">{recipe.category}</td>
-
-                  <td className="p-4">{getMealTypesText(recipe)}</td>
-
-                  <td className="p-4">{recipe.cookingTime}</td>
-
-                  <td className="p-4">{recipe.ingredients.length} Items</td>
-
-                  <td className="p-4 flex gap-2">
-                    <button
-                      onClick={() => handleAddToGrocery(recipe)}
-                      className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded"
-                    >
-                      🛒 Grocery
-                    </button>
-
-                    <button
-                      onClick={() => onEdit(recipe)}
-                      className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded"
-                    >
-                      ✏️ Edit
-                    </button>
-
-                    <button
-                      onClick={() => setRecipeToDelete(recipe)}
-                      className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded"
-                    >
-                      🗑 Delete
-                    </button>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+          <RecipesDesktopTable
+            recipes={filteredRecipes}
+            getMealTypesText={getMealTypesText}
+            onAddToGrocery={handleAddToGrocery}
+            onEdit={onEdit}
+            onDelete={setRecipeToDelete}
+          />
+        </>
+      )}
 
       <ConfirmModal
         isOpen={recipeToDelete !== null}
@@ -128,20 +141,35 @@ export default function RecipesTable({
         confirmText="Delete"
         cancelText="Cancel"
         onCancel={() => setRecipeToDelete(null)}
-        onConfirm={() => {
-          if (recipeToDelete) {
-            setRecipes(
-              recipes.filter((recipe) => recipe.id !== recipeToDelete.id)
-            );
+        onConfirm={async () => {
+  if (!recipeToDelete) return;
 
-            showToast({
-              type: "success",
-              message: `"${recipeToDelete.name}" deleted successfully.`,
-            });
-          }
+  try {
+    await deleteCloudRecipe(recipeToDelete.id);
 
-          setRecipeToDelete(null);
-        }}
+    setRecipes((currentRecipes) =>
+      currentRecipes.filter(
+        (recipe) =>
+          recipe.id !== recipeToDelete.id
+      )
+    );
+
+    showToast({
+      type: "success",
+      message: `"${recipeToDelete.name}" deleted successfully.`,
+    });
+  } catch (error) {
+    showToast({
+      type: "error",
+      message:
+        error instanceof Error
+          ? error.message
+          : "Unable to delete recipe.",
+    });
+  } finally {
+    setRecipeToDelete(null);
+  }
+}}
       />
     </>
   );

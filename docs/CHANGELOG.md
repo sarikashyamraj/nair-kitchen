@@ -1,8 +1,50 @@
 # Changelog
 
-All notable changes to Nair Kitchen will be documented in this file.
+All notable changes to Kitchen Brain will be documented in this file.
 
 The project follows a simplified semantic versioning approach.
+
+---
+# v1.1.0 (In Progress)
+
+## Added
+
+### Mobile Experience
+
+- Responsive application layout
+- Mobile navigation drawer
+- Responsive dashboard
+- Mobile Design System folder
+- Initial `MobileListCard` reusable component
+
+---
+
+## Changed
+
+- Dashboard optimized for mobile devices.
+- Header redesigned for smaller screens.
+- Introduced responsive navigation.
+
+---
+
+### Branding
+- Renamed the application from **Nair Kitchen** to **Kitchen Brain**.
+- Introduced the official tagline: **Plan Meals. Shop Smarter. Live Easier.**
+- Added the official Kitchen Brain app icon.
+- Updated the browser title, application metadata, and favicon.
+- Rebranded the desktop sidebar with the Kitchen Brain identity.
+- Rebranded the mobile header and navigation drawer.
+- Updated product naming across the application and project documentation.
+- Preserved existing Local Storage keys to maintain backward compatibility with saved user data.
+- Updated desktop and mobile navigation branding.
+- Improved mobile header spacing to support the new Kitchen Brain identity.
+- Restored and refined the mobile hamburger navigation after the branding update.
+
+## Architecture
+
+- Created reusable components/mobile folder.
+- Started Mobile Design System.
+- Introduced reusable component strategy.
 
 ---
 

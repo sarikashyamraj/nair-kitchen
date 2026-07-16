@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Recipe, RecipeIngredient, MealType } from "../../types/recipe";
-import { saveRecipes } from "../../lib/recipeStorage";
+import { saveCloudRecipe } from "../../services/recipeService";
 import { MEAL_TYPES, RECIPE_CATEGORIES } from "../../constants/categories";
 import { UNITS } from "../../constants/units";
 import { useToast } from "../../context/ToastContext";
@@ -25,7 +25,7 @@ export default function RecipeForm({
   onClose,
 }: RecipeFormProps) {
   const { showToast } = useToast();
-
+const [isSaving, setIsSaving] = useState(false);
   const [name, setName] = useState("");
   const [category, setCategory] = useState("Vegetarian");
   const [mealTypes, setMealTypes] = useState<MealType[]>(["Lunch"]);
@@ -57,56 +57,69 @@ export default function RecipeForm({
     }
   };
 
-  const handleSave = () => {
-    if (!name.trim()) {
-      showToast({
-        type: "warning",
-        message: "Please enter recipe name.",
-      });
-      return;
-    }
+  const handleSave = async () => {
+  if (!name.trim()) {
+    showToast({
+      type: "warning",
+      message: "Please enter recipe name.",
+    });
+    return;
+  }
 
-    if (mealTypes.length === 0) {
-      showToast({
-        type: "warning",
-        message: "Please select at least one meal type.",
-      });
-      return;
-    }
+  if (mealTypes.length === 0) {
+    showToast({
+      type: "warning",
+      message: "Please select at least one meal type.",
+    });
+    return;
+  }
 
-    const validIngredients = ingredients.filter(
-      (ingredient) =>
-        ingredient.name.trim() &&
-        ingredient.quantity > 0 &&
-        ingredient.unit.trim()
-    );
+  const validIngredients = ingredients.filter(
+    (ingredient) =>
+      ingredient.name.trim() &&
+      ingredient.quantity > 0 &&
+      ingredient.unit.trim()
+  );
 
-    if (validIngredients.length === 0) {
-      showToast({
-        type: "warning",
-        message: "Please add at least one valid ingredient.",
-      });
-      return;
-    }
+  if (validIngredients.length === 0) {
+    showToast({
+      type: "warning",
+      message: "Please add at least one valid ingredient.",
+    });
+    return;
+  }
 
-    const updatedRecipe: Recipe = {
-      id: recipe ? recipe.id : Date.now().toString(),
-      name,
-      category,
-      mealTypes,
-      cookingTime,
-      ingredients: validIngredients,
-      instructions,
-    };
+  const recipeToSave: Recipe = {
+    id: recipe?.id || crypto.randomUUID(),
+    name: name.trim(),
+    category,
+    mealTypes,
+    cookingTime: cookingTime.trim(),
+    ingredients: validIngredients,
+    instructions: instructions.trim(),
+  };
 
-    const updatedRecipes = recipe
-      ? recipes.map((existingRecipe) =>
-          existingRecipe.id === recipe.id ? updatedRecipe : existingRecipe
-        )
-      : [...recipes, updatedRecipe];
+  try {
+    setIsSaving(true);
 
-    setRecipes(updatedRecipes);
-    saveRecipes(updatedRecipes);
+    const savedRecipe =
+      await saveCloudRecipe(recipeToSave);
+
+    setRecipes((currentRecipes) => {
+      if (recipe) {
+        return currentRecipes.map(
+          (existingRecipe) =>
+            existingRecipe.id === recipe.id
+              ? savedRecipe
+              : existingRecipe
+        );
+      }
+
+      return [
+        ...currentRecipes,
+        savedRecipe,
+      ];
+    });
 
     showToast({
       type: "success",
@@ -116,11 +129,22 @@ export default function RecipeForm({
     });
 
     onClose();
-  };
+  } catch (error) {
+    showToast({
+      type: "error",
+      message:
+        error instanceof Error
+          ? error.message
+          : "Unable to save recipe.",
+    });
+  } finally {
+    setIsSaving(false);
+  }
+};
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl p-6 max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl p-4 sm:p-6 max-h-[90vh] overflow-y-auto mx-3 sm:mx-0">
         <h2 className="text-2xl font-bold text-[#2F6B3C] mb-6">
           {recipe ? "Edit Recipe" : "Add Recipe"}
         </h2>
@@ -183,63 +207,64 @@ export default function RecipeForm({
             <div className="space-y-3">
               {ingredients.map((ingredient, index) => (
                 <div
-                  key={index}
-                  className="grid grid-cols-12 gap-3 items-end"
-                >
-                  <div className="col-span-5">
-                    <Input
-                      label={index === 0 ? "Ingredient" : undefined}
-                      placeholder="Ingredient Name"
-                      value={ingredient.name}
-                      onChange={(e) => {
-                        const updated = [...ingredients];
-                        updated[index].name = e.target.value;
-                        setIngredients(updated);
-                      }}
-                    />
-                  </div>
+  key={index}
+  className="grid grid-cols-12 gap-3 items-end"
+>
+  <div className="col-span-12 sm:col-span-5">
+    <Input
+      label={index === 0 ? "Ingredient" : undefined}
+      placeholder="Ingredient Name"
+      value={ingredient.name}
+      onChange={(e) => {
+        const updated = [...ingredients];
+        updated[index].name = e.target.value;
+        setIngredients(updated);
+      }}
+    />
+  </div>
 
-                  <div className="col-span-2">
-                    <Input
-                      label={index === 0 ? "Qty" : undefined}
-                      type="number"
-                      value={ingredient.quantity}
-                      onChange={(e) => {
-                        const updated = [...ingredients];
-                        updated[index].quantity = Number(e.target.value);
-                        setIngredients(updated);
-                      }}
-                    />
-                  </div>
+  <div className="col-span-4 sm:col-span-2">
+    <Input
+      label={index === 0 ? "Qty" : undefined}
+      type="number"
+      value={ingredient.quantity}
+      onChange={(e) => {
+        const updated = [...ingredients];
+        updated[index].quantity = Number(e.target.value);
+        setIngredients(updated);
+      }}
+    />
+  </div>
 
-                  <div className="col-span-3">
-                    <Select
-                      label={index === 0 ? "Unit" : undefined}
-                      value={ingredient.unit}
-                      onChange={(e) => {
-                        const updated = [...ingredients];
-                        updated[index].unit = e.target.value;
-                        setIngredients(updated);
-                      }}
-                      options={["", ...UNITS]}
-                    />
-                  </div>
+  <div className="col-span-5 sm:col-span-3">
+    <Select
+      label={index === 0 ? "Unit" : undefined}
+      value={ingredient.unit}
+      onChange={(e) => {
+        const updated = [...ingredients];
+        updated[index].unit = e.target.value;
+        setIngredients(updated);
+      }}
+      options={["", ...UNITS]}
+    />
+  </div>
 
-                  <div className="col-span-2">
-                    <Button
-                      type="button"
-                      variant="danger"
-                      className="w-full"
-                      onClick={() =>
-                        setIngredients(
-                          ingredients.filter((_, i) => i !== index)
-                        )
-                      }
-                    >
-                      Remove
-                    </Button>
-                  </div>
-                </div>
+  <div className="col-span-3 sm:col-span-2">
+    <Button
+      type="button"
+      variant="danger"
+      className="w-full px-2"
+      onClick={() =>
+        setIngredients(
+          ingredients.filter((_, i) => i !== index)
+        )
+      }
+    >
+      <span className="sm:hidden">🗑</span>
+      <span className="hidden sm:inline">Remove</span>
+    </Button>
+  </div>
+</div>
               ))}
 
               <Button
@@ -276,7 +301,14 @@ export default function RecipeForm({
             Cancel
           </Button>
 
-          <Button onClick={handleSave}>Save Recipe</Button>
+          <Button
+  onClick={handleSave}
+  disabled={isSaving}
+>
+  {isSaving
+    ? "Saving..."
+    : "Save Recipe"}
+</Button>
         </div>
       </div>
     </div>

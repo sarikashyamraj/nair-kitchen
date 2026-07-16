@@ -6,7 +6,7 @@ import { INGREDIENT_CATEGORIES } from "../../constants/categories";
 import { UNITS } from "../../constants/units";
 import { useToast } from "../../context/ToastContext";
 import { suggestCategory } from "../../services/categorySuggestion";
-
+import { saveCloudGroceryItem } from "../../services/groceryService";
 interface ShoppingFormProps {
   item: ShoppingItem | null;
   onClose: () => void;
@@ -21,7 +21,7 @@ export default function ShoppingForm({
   setShoppingItems,
 }: ShoppingFormProps) {
   const { showToast } = useToast();
-
+const [isSaving, setIsSaving] = useState(false);
   const [name, setName] = useState("");
   const [category, setCategory] = useState("Other");
   const [quantityValue, setQuantityValue] = useState("");
@@ -48,43 +48,57 @@ export default function ShoppingForm({
     }
   };
 
-  const handleSave = () => {
-    if (!name.trim()) {
-      showToast({
-        type: "warning",
-        message: "Please enter an item name.",
-      });
-      return;
-    }
+  const handleSave = async () => {
+  if (!name.trim()) {
+    showToast({
+      type: "warning",
+      message: "Please enter an item name.",
+    });
+    return;
+  }
 
-    if (!quantityValue.trim()) {
-      showToast({
-        type: "warning",
-        message: "Please enter quantity.",
-      });
-      return;
-    }
+  if (!quantityValue.trim()) {
+    showToast({
+      type: "warning",
+      message: "Please enter quantity.",
+    });
+    return;
+  }
 
-    const finalQuantity = `${quantityValue} ${unit}`;
+  const finalQuantity = `${quantityValue} ${unit}`;
 
-    const duplicate = shoppingItems.find(
-      (shoppingItem) =>
-        shoppingItem.id !== item?.id &&
-        shoppingItem.name.trim().toLowerCase() ===
-          name.trim().toLowerCase()
-    );
+  const duplicate = shoppingItems.find(
+    (shoppingItem) =>
+      shoppingItem.id !== item?.id &&
+      shoppingItem.name.trim().toLowerCase() ===
+        name.trim().toLowerCase()
+  );
+
+  try {
+    setIsSaving(true);
 
     if (duplicate) {
+      const duplicateToSave: ShoppingItem = {
+        ...duplicate,
+        name: name.trim(),
+        category,
+        quantity: finalQuantity,
+      };
+
+      const savedDuplicate =
+        await saveCloudGroceryItem(
+          duplicateToSave
+        );
+
       setShoppingItems(
-        shoppingItems.map((shoppingItem) =>
-          shoppingItem.id === duplicate.id
-            ? {
-                ...shoppingItem,
-                quantity: finalQuantity,
-                category,
-              }
-            : shoppingItem
-        )
+        (currentItems) =>
+          currentItems.map(
+            (shoppingItem) =>
+              shoppingItem.id ===
+              duplicate.id
+                ? savedDuplicate
+                : shoppingItem
+          )
       );
 
       showToast({
@@ -96,36 +110,60 @@ export default function ShoppingForm({
       return;
     }
 
-    const newItem: ShoppingItem = {
-      id: item ? item.id : Date.now().toString(),
-      name,
+    const itemToSave: ShoppingItem = {
+      id:
+        item?.id ||
+        crypto.randomUUID(),
+      name: name.trim(),
       category,
       quantity: finalQuantity,
-      purchased: item ? item.purchased : false,
+      purchased:
+        item?.purchased || false,
     };
 
-    if (item) {
-      setShoppingItems(
-        shoppingItems.map((shoppingItem) =>
-          shoppingItem.id === item.id ? newItem : shoppingItem
-        )
+    const savedItem =
+      await saveCloudGroceryItem(
+        itemToSave
       );
 
-      showToast({
-        type: "success",
-        message: "Shopping item updated successfully.",
-      });
-    } else {
-      setShoppingItems([...shoppingItems, newItem]);
+    setShoppingItems(
+      (currentItems) => {
+        if (item) {
+          return currentItems.map(
+            (shoppingItem) =>
+              shoppingItem.id === item.id
+                ? savedItem
+                : shoppingItem
+          );
+        }
 
-      showToast({
-        type: "success",
-        message: "Shopping item added successfully.",
-      });
-    }
+        return [
+          ...currentItems,
+          savedItem,
+        ];
+      }
+    );
+
+    showToast({
+      type: "success",
+      message: item
+        ? "Shopping item updated successfully."
+        : "Shopping item added successfully.",
+    });
 
     onClose();
-  };
+  } catch (error) {
+    showToast({
+      type: "error",
+      message:
+        error instanceof Error
+          ? error.message
+          : "Unable to save Shopping item.",
+    });
+  } finally {
+    setIsSaving(false);
+  }
+};
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
@@ -187,11 +225,15 @@ export default function ShoppingForm({
           </button>
 
           <button
-            onClick={handleSave}
-            className="bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded-lg"
-          >
-            Save
-          </button>
+  type="button"
+  onClick={handleSave}
+  disabled={isSaving}
+  className="rounded-lg bg-green-600 px-5 py-2 text-white hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-60"
+>
+  {isSaving
+    ? "Saving..."
+    : "Save"}
+</button>
         </div>
       </div>
     </div>

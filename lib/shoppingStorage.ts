@@ -9,9 +9,3 @@ export function loadShopping(): ShoppingItem[] {
 
   return stored ? JSON.parse(stored) : [];
 }
-
-export function saveShopping(items: ShoppingItem[]) {
-  if (typeof window === "undefined") return;
-
-  localStorage.setItem(SHOPPING_STORAGE_KEY, JSON.stringify(items));
-}

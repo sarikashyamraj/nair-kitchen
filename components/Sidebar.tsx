@@ -1,14 +1,17 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import LogoutButton from "./auth/LogoutButton";
 import {
   Home,
   CalendarDays,
   Package,
   BookOpen,
   ShoppingCart,
-  ChefHat,
+  WalletCards,
+  Settings,
   Lightbulb,
 } from "lucide-react";
 
@@ -38,41 +41,59 @@ const menuItems = [
     icon: ShoppingCart,
     label: "Grocery",
   },
+  {
+    href: "/budget",
+    icon: WalletCards,
+    label: "Budget",
+  },
+  {
+    href: "/settings",
+    icon: Settings,
+    label: "Settings",
+  },
 ];
 
 export default function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="w-72 min-h-screen bg-white border-r border-[#EADCC4] shadow-sm flex flex-col">
-
-      {/* Logo */}
-      <div className="px-8 py-8 border-b border-[#F4E8D0]">
-        <div className="flex items-center gap-4">
-
-          <div className="w-14 h-14 rounded-2xl bg-[#2F6B3C] flex items-center justify-center shadow-lg">
-            <ChefHat className="w-8 h-8 text-white" />
+    <aside className="flex min-h-screen w-72 flex-col border-r border-[#EADCC4] bg-white shadow-sm">
+      {/* Brand */}
+      <div className="border-b border-[#F4E8D0] px-6 py-7">
+        <Link
+          href="/"
+          className="flex items-center gap-3 rounded-2xl transition hover:bg-[#FFF8EC]"
+        >
+          <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-2xl border border-[#EADCC4] bg-[#FFF8EC] shadow-sm">
+            <Image
+              src="/branding/kitchen-brain-icon.png"
+              alt="Kitchen Brain"
+              fill
+              sizes="64px"
+              className="object-cover"
+              priority
+            />
           </div>
 
-          <div>
-            <h1 className="text-2xl font-bold text-[#2F6B3C]">
-              Nair Kitchen
+          <div className="min-w-0">
+            <h1 className="text-2xl font-semibold leading-tight tracking-[-0.02em] text-[#174D2A]">
+              <span className="block">Kitchen</span>
+<span className="block text-[#C88A22]">Brain</span>
             </h1>
 
-            <p className="text-sm text-gray-500">
-              Smart Family Kitchen
+            <p className="mt-1 text-[11px] leading-4 text-gray-500">
+              Plan Meals. Shop Smarter.
+              <br />
+              Live Easier.
             </p>
           </div>
-
-        </div>
+        </Link>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 px-5 py-8 space-y-2">
-
+      <nav className="flex-1 space-y-2 px-5 py-8">
         {menuItems.map((item) => {
           const Icon = item.icon;
-
           const isActive = pathname === item.href;
 
           return (
@@ -93,16 +114,17 @@ export default function Sidebar() {
             </Link>
           );
         })}
-
       </nav>
 
-      {/* Kitchen Tip */}
-      <div className="border-t border-[#F4E8D0] p-6">
+      {/* Logout */}
+<div className="border-t border-[#F4E8D0] px-5 py-4">
+  <LogoutButton />
+</div>
 
+{/* Kitchen Tip */}
+<div className="border-t border-[#F4E8D0] p-6">
         <div className="rounded-2xl border border-[#F4E8D0] bg-[#FFF8EC] p-4">
-
-          <div className="flex items-center gap-2 mb-3">
-
+          <div className="mb-3 flex items-center gap-2">
             <Lightbulb
               size={18}
               className="text-[#D89B3C]"
@@ -111,18 +133,14 @@ export default function Sidebar() {
             <h3 className="font-semibold text-[#5A4032]">
               Kitchen Tip
             </h3>
-
           </div>
 
-          <p className="text-sm text-gray-600 leading-6">
+          <p className="text-sm leading-6 text-gray-600">
             Planning your meals for the week can reduce food waste,
             save money, and make cooking stress-free.
           </p>
-
         </div>
-
       </div>
-
     </aside>
   );
 }

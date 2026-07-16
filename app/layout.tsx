@@ -15,8 +15,32 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Nair Kitchen",
-  description: "Your Smart Family Kitchen Assistant",
+  title: {
+    default: "Kitchen Brain",
+    template: "%s | Kitchen Brain",
+  },
+  description:
+    "Plan meals, manage your pantry, organize recipes, shop smarter, and simplify everyday family life with Kitchen Brain.",
+  applicationName: "Kitchen Brain",
+  keywords: [
+    "Kitchen Brain",
+    "meal planner",
+    "family meal planning",
+    "pantry management",
+    "grocery planner",
+    "grocery budget",
+    "recipe manager",
+    "smart kitchen app",
+  ],
+  authors: [
+    {
+      name: "Sarika Nair",
+    },
+  ],
+  icons: {
+    icon: "/branding/kitchen-brain-icon.png",
+    apple: "/branding/kitchen-brain-icon.png",
+  },
 };
 
 export default function RootLayout({

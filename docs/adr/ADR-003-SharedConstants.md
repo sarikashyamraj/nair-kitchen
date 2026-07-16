@@ -90,7 +90,7 @@ Rejected because:
 
 ### API-driven configuration
 
-Rejected because Nair Kitchen is currently a local-first application and does not require server-managed configuration.
+Rejected because Kitchen Brain is currently a local-first application and does not require server-managed configuration.
 
 ---
 
