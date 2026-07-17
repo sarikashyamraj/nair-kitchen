@@ -2,7 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-
+import {
+  loadCloudPlanner,
+  saveCloudPlanner,
+} from "../../services/plannerService";
 import AppLayout from "../../components/AppLayout";
 import PlannerHeader from "../../components/planner/PlannerHeader";
 import PlannerTable from "../../components/planner/PlannerTable";
@@ -18,13 +21,9 @@ import { useToast } from "../../context/ToastContext";
 import { aggregateIngredients } from "../../services/ingredientAggregator";
 import { generateGroceryFromRecipe } from "../../services/groceryEngine";
 
-import {
-  loadCloudPlanner,
-  saveCloudPlanner,
-} from "../../services/plannerService";
 
-import { loadPlanner } from "../../lib/plannerStorage";
-import { defaultPlanner } from "../../data/defaultPlanner";
+
+
 
 type MealSlot =
   | "morningDrink"
@@ -63,29 +62,11 @@ export default function PlannerPage() {
         setLoadError("");
 
         const cloudPlanner =
-          await loadCloudPlanner();
+  await loadCloudPlanner();
 
-        let resolvedPlanner =
-          cloudPlanner;
+if (!isMounted) return;
 
-        if (cloudPlanner.length === 0) {
-          const localPlanner =
-            loadPlanner();
-
-          const plannerToMigrate =
-            localPlanner.length > 0
-              ? localPlanner
-              : defaultPlanner;
-
-          resolvedPlanner =
-            await saveCloudPlanner(
-              plannerToMigrate
-            );
-        }
-
-        if (!isMounted) return;
-
-        setPlanner(resolvedPlanner);
+setPlanner(cloudPlanner);
       } catch (error) {
         if (!isMounted) return;
 

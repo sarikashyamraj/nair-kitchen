@@ -4,10 +4,9 @@ import { useEffect, useState } from "react";
 import {
   deleteCloudGroceryItems,
   loadCloudGrocery,
-  saveCloudGroceryItems,
-} from "../../services/groceryService";
+  } from "../../services/groceryService";
 import { saveCloudPantryItem } from "../../services/pantryService";
-import { loadShopping } from "../../lib/shoppingStorage";
+
 import { useToast } from "../../context/ToastContext";
 import AppLayout from "../../components/AppLayout";
 import Toast from "../../components/common/Toast";
@@ -95,26 +94,11 @@ useEffect(() => {
       setLoadError("");
 
       const cloudGrocery =
-        await loadCloudGrocery();
+  await loadCloudGrocery();
 
-      let resolvedGrocery =
-        cloudGrocery;
+if (!isMounted) return;
 
-      if (cloudGrocery.length === 0) {
-        const localGrocery =
-          loadShopping();
-
-        if (localGrocery.length > 0) {
-          resolvedGrocery =
-            await saveCloudGroceryItems(
-              localGrocery
-            );
-        }
-      }
-
-      if (!isMounted) return;
-
-      setShopping(resolvedGrocery);
+setShopping(cloudGrocery);
     } catch (error) {
       if (!isMounted) return;
 

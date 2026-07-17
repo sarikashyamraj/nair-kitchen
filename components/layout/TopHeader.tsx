@@ -2,7 +2,11 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { Bell } from "lucide-react";
 
 import { useKitchen } from "../../context/KitchenContext";
@@ -10,74 +14,100 @@ import { useKitchen } from "../../context/KitchenContext";
 import { UserProfile } from "../../types/profile";
 import { UserPreferences } from "../../types/preferences";
 
-import { defaultUserProfile } from "../../data/defaultProfile";
 import { defaultPreferences } from "../../data/defaultPreferences";
 
 import { loadCloudProfile } from "../../services/profileService";
 import { loadPreferences } from "../../lib/preferencesStorage";
 import { formatDateByPreference } from "../../lib/dateFormatter";
+
 export default function TopHeader() {
-  const { pantry, shopping, planner } = useKitchen();
+  const {
+    pantry,
+    shopping,
+    planner,
+  } = useKitchen();
 
   const [profile, setProfile] =
-    useState<UserProfile>(defaultUserProfile);
+    useState<UserProfile | null>(null);
 
-  const [preferences, setPreferences] =
-    useState<UserPreferences>(defaultPreferences);
+  const [
+    isProfileLoaded,
+    setIsProfileLoaded,
+  ] = useState(false);
 
-  const [isNotificationsOpen, setIsNotificationsOpen] =
-    useState(false);
+  const [
+    preferences,
+    setPreferences,
+  ] = useState<UserPreferences>(
+    defaultPreferences
+  );
 
-  const notificationRef = useRef<HTMLDivElement | null>(null);
+  const [
+    isNotificationsOpen,
+    setIsNotificationsOpen,
+  ] = useState(false);
+
+  const notificationRef =
+    useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-  let isMounted = true;
+    let isMounted = true;
 
-  async function refreshProfile() {
-    try {
-      const cloudProfileResult =
-        await loadCloudProfile();
+    async function refreshProfile() {
+      try {
+        const cloudProfileResult =
+          await loadCloudProfile();
 
-      if (
-        isMounted &&
-        cloudProfileResult.profile
-      ) {
+        if (!isMounted) {
+          return;
+        }
+
         setProfile(
           cloudProfileResult.profile
         );
+      } catch (error) {
+        console.error(
+          "Unable to load profile in header:",
+          error
+        );
+
+        if (isMounted) {
+          setProfile(null);
+        }
+      } finally {
+        if (isMounted) {
+          setIsProfileLoaded(true);
+        }
       }
-    } catch (error) {
-      console.error(
-        "Unable to load profile in header:",
-        error
-      );
     }
-  }
 
-  void refreshProfile();
-
-  function handleProfileUpdated() {
     void refreshProfile();
-  }
 
-  window.addEventListener(
-    "profile-updated",
-    handleProfileUpdated
-  );
+    function handleProfileUpdated() {
+      setIsProfileLoaded(false);
+      void refreshProfile();
+    }
 
-  return () => {
-    isMounted = false;
-
-    window.removeEventListener(
+    window.addEventListener(
       "profile-updated",
       handleProfileUpdated
     );
-  };
-}, []);
+
+    return () => {
+      isMounted = false;
+
+      window.removeEventListener(
+        "profile-updated",
+        handleProfileUpdated
+      );
+    };
+  }, []);
 
   useEffect(() => {
     function refreshPreferences() {
-      setPreferences(loadPreferences());
+      setPreferences(
+        loadPreferences()
+      );
     }
 
     refreshPreferences();
@@ -96,7 +126,9 @@ export default function TopHeader() {
   }, []);
 
   useEffect(() => {
-    function handleOutsideClick(event: MouseEvent) {
+    function handleOutsideClick(
+      event: MouseEvent
+    ) {
       if (
         notificationRef.current &&
         !notificationRef.current.contains(
@@ -127,33 +159,51 @@ export default function TopHeader() {
     hour < 12
       ? "Good Morning"
       : hour < 17
-      ? "Good Afternoon"
-      : "Good Evening";
+        ? "Good Afternoon"
+        : "Good Evening";
 
-  const weekday = now.toLocaleDateString("en-US", {
-  weekday: "long",
-});
+  const weekday =
+    now.toLocaleDateString(
+      "en-US",
+      {
+        weekday: "long",
+      }
+    );
 
-const formattedDate = `${weekday}, ${formatDateByPreference(
-  now,
-  preferences.dateFormat
-)}`;
+  const formattedDate =
+    `${weekday}, ${formatDateByPreference(
+      now,
+      preferences.dateFormat
+    )}`;
 
-  const currentDay = now.toLocaleDateString("en-US", {
-    weekday: "long",
-  });
+  const currentDay =
+    now.toLocaleDateString(
+      "en-US",
+      {
+        weekday: "long",
+      }
+    );
 
-  const lowStockItems = pantry.filter(
-    (item) => item.quantity <= item.minQuantity
-  );
+  const lowStockItems =
+    pantry.filter(
+      (item) =>
+        item.quantity <=
+        item.minQuantity
+    );
 
-  const pendingGroceryItems = shopping.filter(
-    (item) => !item.purchased
-  );
+  const pendingGroceryItems =
+    shopping.filter(
+      (item) => !item.purchased
+    );
 
-  const todaysPlan = [...planner]
+  const todaysPlan = [
+    ...planner,
+  ]
     .reverse()
-    .find((plan) => plan.day === currentDay);
+    .find(
+      (plan) =>
+        plan.day === currentDay
+    );
 
   const mealSlots = [
     todaysPlan?.morningDrink,
@@ -163,37 +213,53 @@ const formattedDate = `${weekday}, ${formatDateByPreference(
     todaysPlan?.dinner,
   ];
 
-  const unplannedMealCount = mealSlots.filter(
-    (recipeId) => !recipeId
-  ).length;
+  const unplannedMealCount =
+    mealSlots.filter(
+      (recipeId) => !recipeId
+    ).length;
 
   const notifications = [
     {
       id: "pantry",
+
       show:
         preferences.lowStockAlerts &&
         lowStockItems.length > 0,
 
-      title: `${lowStockItems.length} pantry item${
-        lowStockItems.length === 1 ? " is" : "s are"
+      title: `${
+        lowStockItems.length
+      } pantry item${
+        lowStockItems.length === 1
+          ? " is"
+          : "s are"
       } running low`,
 
-      description: lowStockItems
-        .slice(0, 3)
-        .map((item) => item.name)
-        .join(", "),
+      description:
+        lowStockItems
+          .slice(0, 3)
+          .map(
+            (item) => item.name
+          )
+          .join(", "),
 
       href: "/pantry",
       emoji: "🥫",
     },
     {
       id: "grocery",
+
       show:
         preferences.groceryReminders &&
-        pendingGroceryItems.length > 0,
+        pendingGroceryItems.length >
+          0,
 
-      title: `${pendingGroceryItems.length} grocery item${
-        pendingGroceryItems.length === 1 ? "" : "s"
+      title: `${
+        pendingGroceryItems.length
+      } grocery item${
+        pendingGroceryItems.length ===
+        1
+          ? ""
+          : "s"
       } pending`,
 
       description:
@@ -204,30 +270,42 @@ const formattedDate = `${weekday}, ${formatDateByPreference(
     },
     {
       id: "planner",
+
       show:
         preferences.mealReminders &&
         unplannedMealCount > 0,
 
-      title: `${unplannedMealCount} meal${
-        unplannedMealCount === 1 ? "" : "s"
+      title: `${
+        unplannedMealCount
+      } meal${
+        unplannedMealCount === 1
+          ? ""
+          : "s"
       } not planned today`,
 
-      description: `Complete your ${currentDay} meal plan.`,
+      description:
+        `Complete your ${currentDay} meal plan.`,
 
       href: "/planner",
       emoji: "📅",
     },
-  ].filter((notification) => notification.show);
+  ].filter(
+    (notification) =>
+      notification.show
+  );
 
-  const notificationCount = notifications.length;
+  const notificationCount =
+    notifications.length;
 
   return (
     <header className="mb-6 rounded-2xl border border-[#F4E8D0] bg-white px-4 py-4 shadow-sm sm:px-6 sm:py-5 lg:mb-8 lg:px-8 lg:py-6">
       <div className="flex items-center justify-between gap-3">
-        {/* Greeting and Date */}
         <div className="min-w-0">
           <h1 className="text-xl font-bold leading-tight text-[#2F6B3C] sm:text-3xl">
-            {greeting}, {profile.name} 👋
+            {isProfileLoaded &&
+            profile
+              ? `${greeting}, ${profile.name} 👋`
+              : `${greeting} 👋`}
           </h1>
 
           <p className="mt-1 text-xs text-[#6B7280] sm:text-base">
@@ -235,9 +313,7 @@ const formattedDate = `${weekday}, ${formatDateByPreference(
           </p>
         </div>
 
-        {/* Header Actions */}
         <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">
-          {/* Notification Bell */}
           <div
             ref={notificationRef}
             className="relative"
@@ -245,19 +321,27 @@ const formattedDate = `${weekday}, ${formatDateByPreference(
             <button
               type="button"
               aria-label="Notifications"
-              aria-expanded={isNotificationsOpen}
+              aria-expanded={
+                isNotificationsOpen
+              }
               onClick={() =>
                 setIsNotificationsOpen(
-                  (currentValue) => !currentValue
+                  (
+                    currentValue
+                  ) =>
+                    !currentValue
                 )
               }
               className="relative rounded-xl p-2 transition hover:bg-[#F4E8D0] sm:p-3"
             >
               <Bell size={21} />
 
-              {notificationCount > 0 && (
+              {notificationCount >
+                0 && (
                 <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-[#D89B3C] px-1 text-[10px] font-bold text-white">
-                  {notificationCount}
+                  {
+                    notificationCount
+                  }
                 </span>
               )}
             </button>
@@ -270,9 +354,11 @@ const formattedDate = `${weekday}, ${formatDateByPreference(
                   </h2>
 
                   <p className="mt-1 text-xs text-gray-500">
-                    {notificationCount > 0
+                    {notificationCount >
+                    0
                       ? `${notificationCount} area${
-                          notificationCount === 1
+                          notificationCount ===
+                          1
                             ? ""
                             : "s"
                         } need attention.`
@@ -280,60 +366,84 @@ const formattedDate = `${weekday}, ${formatDateByPreference(
                   </p>
                 </div>
 
-                {notificationCount === 0 ? (
+                {notificationCount ===
+                0 ? (
                   <div className="px-4 py-6 text-center">
-                    <p className="text-2xl">✅</p>
+                    <p className="text-2xl">
+                      ✅
+                    </p>
 
                     <p className="mt-2 font-semibold text-[#2F6B3C]">
                       All caught up
                     </p>
 
                     <p className="mt-1 text-sm text-gray-500">
-                      No enabled kitchen alerts right now.
+                      No enabled
+                      kitchen alerts
+                      right now.
                     </p>
                   </div>
                 ) : (
                   <div className="max-h-80 overflow-y-auto">
-                    {notifications.map((notification) => (
-                      <Link
-                        key={notification.id}
-                        href={notification.href}
-                        onClick={() =>
-                          setIsNotificationsOpen(false)
-                        }
-                        className="flex gap-3 border-b border-[#F4E8D0] px-4 py-3 transition last:border-b-0 hover:bg-[#FFF8EC]"
-                      >
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#FFF4DD] text-lg">
-                          {notification.emoji}
-                        </div>
+                    {notifications.map(
+                      (
+                        notification
+                      ) => (
+                        <Link
+                          key={
+                            notification.id
+                          }
+                          href={
+                            notification.href
+                          }
+                          onClick={() =>
+                            setIsNotificationsOpen(
+                              false
+                            )
+                          }
+                          className="flex gap-3 border-b border-[#F4E8D0] px-4 py-3 transition last:border-b-0 hover:bg-[#FFF8EC]"
+                        >
+                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#FFF4DD] text-lg">
+                            {
+                              notification.emoji
+                            }
+                          </div>
 
-                        <div className="min-w-0">
-                          <p className="text-sm font-semibold text-[#5A4032]">
-                            {notification.title}
-                          </p>
+                          <div className="min-w-0">
+                            <p className="text-sm font-semibold text-[#5A4032]">
+                              {
+                                notification.title
+                              }
+                            </p>
 
-                          <p className="mt-1 line-clamp-2 text-xs text-gray-500">
-                            {notification.description}
-                          </p>
-                        </div>
-                      </Link>
-                    ))}
+                            <p className="mt-1 line-clamp-2 text-xs text-gray-500">
+                              {
+                                notification.description
+                              }
+                            </p>
+                          </div>
+                        </Link>
+                      )
+                    )}
                   </div>
                 )}
               </div>
             )}
           </div>
 
-          {/* Profile */}
           <Link
             href="/profile"
             aria-label="Open profile"
             className="flex items-center gap-2 rounded-xl p-1 transition hover:bg-[#FFF8EC] sm:gap-3 sm:p-2"
           >
             <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-full border-2 border-[#D89B3C] bg-[#F4E8D0] shadow-sm sm:h-12 sm:w-12">
-              {profile.profileImage ? (
+              {!isProfileLoaded ? (
+                <div className="h-full w-full animate-pulse bg-[#EADCC4]" />
+              ) : profile?.profileImage ? (
                 <Image
-                  src={profile.profileImage}
+                  src={
+                    profile.profileImage
+                  }
                   alt={`${profile.name} profile`}
                   fill
                   sizes="48px"
@@ -342,21 +452,35 @@ const formattedDate = `${weekday}, ${formatDateByPreference(
                 />
               ) : (
                 <div className="flex h-full w-full items-center justify-center font-bold text-[#2F6B3C]">
-                  {profile.name
-                    .charAt(0)
-                    .toUpperCase()}
+                  {profile?.name
+                    ? profile.name
+                        .charAt(0)
+                        .toUpperCase()
+                    : "U"}
                 </div>
               )}
             </div>
 
             <div className="hidden text-left lg:block">
-              <p className="font-semibold leading-tight text-[#5A4032]">
-                {profile.name}
-              </p>
+              {!isProfileLoaded ? (
+                <div className="space-y-2">
+                  <div className="h-4 w-24 animate-pulse rounded bg-[#EADCC4]" />
 
-              <p className="mt-1 text-xs text-gray-500">
-                {profile.role}
-              </p>
+                  <div className="h-3 w-16 animate-pulse rounded bg-[#F4E8D0]" />
+                </div>
+              ) : (
+                <>
+                  <p className="font-semibold leading-tight text-[#5A4032]">
+                    {profile?.name ||
+                      "User"}
+                  </p>
+
+                  <p className="mt-1 text-xs text-gray-500">
+                    {profile?.role ||
+                      "Kitchen Manager"}
+                  </p>
+                </>
+              )}
             </div>
           </Link>
         </div>
