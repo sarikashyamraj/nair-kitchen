@@ -1,13 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import {
-  loadCloudRecipes,
-  saveCloudRecipe,
-} from "../../services/recipeService";
-
-import { loadRecipes } from "../../lib/recipeStorage";
-import { useToast } from "../../context/ToastContext";
 
 import AppLayout from "../../components/AppLayout";
 
@@ -21,7 +14,11 @@ import MobileSearchBar from "../../components/mobile/MobileSearchBar";
 import MobileFAB from "../../components/mobile/MobileFAB";
 
 import { Recipe } from "../../types/recipe";
+
 import { useKitchen } from "../../context/KitchenContext";
+import { useToast } from "../../context/ToastContext";
+
+import { loadCloudRecipes } from "../../services/recipeService";
 
 const categories = [
   "All",
@@ -31,76 +28,76 @@ const categories = [
 ];
 
 export default function RecipesPage() {
-  const { recipes, setRecipes } = useKitchen();
-const { showToast } = useToast();
-  const [isFormOpen, setIsFormOpen] = useState(false);
+  const { recipes, setRecipes } =
+    useKitchen();
+
+  const { showToast } = useToast();
+
+  const [isFormOpen, setIsFormOpen] =
+    useState(false);
 
   const [editingRecipe, setEditingRecipe] =
     useState<Recipe | null>(null);
 
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm, setSearchTerm] =
+    useState("");
 
-  const [selectedCategory, setSelectedCategory] =
-    useState("All");
-    const [isLoaded, setIsLoaded] = useState(false);
-const [loadError, setLoadError] = useState("");
-useEffect(() => {
-  let isMounted = true;
+  const [
+    selectedCategory,
+    setSelectedCategory,
+  ] = useState("All");
 
-  async function loadRecipeData() {
-    try {
-      setLoadError("");
+  const [isLoaded, setIsLoaded] =
+    useState(false);
 
-      const cloudRecipes =
-        await loadCloudRecipes();
+  const [loadError, setLoadError] =
+    useState("");
 
-      let resolvedRecipes =
-        cloudRecipes;
+  useEffect(() => {
+    let isMounted = true;
 
-      if (cloudRecipes.length === 0) {
-        const localRecipes =
-          loadRecipes();
+    async function loadRecipeData() {
+      try {
+        setLoadError("");
 
-        if (localRecipes.length > 0) {
-          resolvedRecipes =
-            await Promise.all(
-              localRecipes.map((recipe) =>
-                saveCloudRecipe(recipe)
-              )
-            );
+        const cloudRecipes =
+          await loadCloudRecipes();
+
+        if (!isMounted) {
+          return;
+        }
+
+        setRecipes(cloudRecipes);
+      } catch (error) {
+        if (!isMounted) {
+          return;
+        }
+
+        const message =
+          error instanceof Error
+            ? error.message
+            : "Unable to load Recipes.";
+
+        setLoadError(message);
+
+        showToast({
+          type: "error",
+          message,
+        });
+      } finally {
+        if (isMounted) {
+          setIsLoaded(true);
         }
       }
-
-      if (!isMounted) return;
-
-      setRecipes(resolvedRecipes);
-    } catch (error) {
-      if (!isMounted) return;
-
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Unable to load Recipes.";
-
-      setLoadError(message);
-
-      showToast({
-        type: "error",
-        message,
-      });
-    } finally {
-      if (isMounted) {
-        setIsLoaded(true);
-      }
     }
-  }
 
-  void loadRecipeData();
+    void loadRecipeData();
 
-  return () => {
-    isMounted = false;
-  };
-}, [setRecipes, showToast]);
+    return () => {
+      isMounted = false;
+    };
+  }, [setRecipes, showToast]);
+
   function openAddForm() {
     setEditingRecipe(null);
     setIsFormOpen(true);
@@ -110,31 +107,32 @@ useEffect(() => {
     setEditingRecipe(null);
     setIsFormOpen(false);
   }
-if (!isLoaded) {
-  return (
-    <AppLayout>
-      <div className="flex min-h-[60vh] items-center justify-center">
-        <p className="font-semibold text-[#2F6B3C]">
-          Loading Recipes...
-        </p>
-      </div>
-    </AppLayout>
-  );
-}
 
-if (loadError) {
-  return (
-    <AppLayout>
-      <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-red-700">
-        {loadError}
-      </div>
-    </AppLayout>
-  );
-}
+  if (!isLoaded) {
+    return (
+      <AppLayout>
+        <div className="flex min-h-[60vh] items-center justify-center">
+          <p className="font-semibold text-[#2F6B3C]">
+            Loading Recipes...
+          </p>
+        </div>
+      </AppLayout>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <AppLayout>
+        <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-red-700">
+          {loadError}
+        </div>
+      </AppLayout>
+    );
+  }
+
   return (
     <AppLayout>
       <div className="space-y-6">
-        {/* Sticky Mobile Header and Search */}
         <div className="sticky top-0 z-30 -mx-4 bg-[#FFFDF8] px-4 pb-3 pt-1 md:hidden">
           <MobilePageHeader
             title="Recipes"
@@ -145,26 +143,35 @@ if (loadError) {
             <MobileSearchBar
               searchValue={searchTerm}
               onSearchChange={setSearchTerm}
-              categoryValue={selectedCategory}
+              categoryValue={
+                selectedCategory
+              }
               categories={categories}
-              onCategoryChange={setSelectedCategory}
+              onCategoryChange={
+                setSelectedCategory
+              }
               placeholder="Search recipes..."
             />
           </div>
         </div>
 
-        {/* Desktop Header */}
         <div className="hidden md:block">
           <RecipesHeader
             onAdd={openAddForm}
             searchTerm={searchTerm}
             setSearchTerm={setSearchTerm}
-            selectedCategory={selectedCategory}
-            setSelectedCategory={setSelectedCategory}
+            selectedCategory={
+              selectedCategory
+            }
+            setSelectedCategory={
+              setSelectedCategory
+            }
           />
         </div>
 
-        <RecipesStats recipes={recipes} />
+        <RecipesStats
+          recipes={recipes}
+        />
 
         <RecipesTable
           recipes={recipes}
@@ -174,7 +181,9 @@ if (loadError) {
             setIsFormOpen(true);
           }}
           searchTerm={searchTerm}
-          selectedCategory={selectedCategory}
+          selectedCategory={
+            selectedCategory
+          }
         />
 
         {isFormOpen && (

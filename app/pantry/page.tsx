@@ -23,8 +23,6 @@ import {
   saveCloudPantryItem,
 } from "../../services/pantryService";
 
-import { loadPantry } from "../../lib/pantryStorage";
-
 const categories = [
   "All",
   "Grains",
@@ -41,23 +39,16 @@ export default function PantryPage() {
   const { pantry, setPantry } = useKitchen();
   const { showToast } = useToast();
 
-  const [isFormOpen, setIsFormOpen] =
-    useState(false);
-
+  const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingItem, setEditingItem] =
     useState<PantryItem | null>(null);
 
-  const [searchTerm, setSearchTerm] =
-    useState("");
-
+  const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] =
     useState("All");
 
-  const [isLoaded, setIsLoaded] =
-    useState(false);
-
-  const [loadError, setLoadError] =
-    useState("");
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [loadError, setLoadError] = useState("");
 
   useEffect(() => {
     let isMounted = true;
@@ -69,31 +60,9 @@ export default function PantryPage() {
         const cloudPantry =
           await loadCloudPantry();
 
-        let resolvedPantry =
-          cloudPantry;
-
-        /*
-         * First-time migration:
-         * If Supabase is empty, copy the existing
-         * Local Storage Pantry into the cloud.
-         */
-        if (cloudPantry.length === 0) {
-          const localPantry =
-            loadPantry();
-
-          if (localPantry.length > 0) {
-            resolvedPantry =
-              await Promise.all(
-                localPantry.map((item) =>
-                  saveCloudPantryItem(item)
-                )
-              );
-          }
-        }
-
         if (!isMounted) return;
 
-        setPantry(resolvedPantry);
+        setPantry(cloudPantry);
       } catch (error) {
         if (!isMounted) return;
 
@@ -127,9 +96,7 @@ export default function PantryPage() {
     setIsFormOpen(true);
   }
 
-  async function handleSave(
-    item: PantryItem
-  ) {
+  async function handleSave(item: PantryItem) {
     try {
       if (editingItem) {
         const savedItem =
@@ -140,27 +107,21 @@ export default function PantryPage() {
 
         setPantry(
           pantry.map((pantryItem) =>
-            pantryItem.id ===
-            editingItem.id
+            pantryItem.id === editingItem.id
               ? savedItem
               : pantryItem
           )
         );
       } else {
-        const existingItem =
-          pantry.find(
-            (pantryItem) =>
-              pantryItem.name
-                .trim()
-                .toLowerCase() ===
-                item.name
-                  .trim()
-                  .toLowerCase() &&
-              pantryItem.unit ===
-                item.unit &&
-              pantryItem.category ===
-                item.category
-          );
+        const existingItem = pantry.find(
+          (pantryItem) =>
+            pantryItem.name
+              .trim()
+              .toLowerCase() ===
+              item.name.trim().toLowerCase() &&
+            pantryItem.unit === item.unit &&
+            pantryItem.category === item.category
+        );
 
         if (existingItem) {
           const mergedItem: PantryItem = {
@@ -168,8 +129,7 @@ export default function PantryPage() {
             quantity:
               existingItem.quantity +
               item.quantity,
-            minQuantity:
-              item.minQuantity,
+            minQuantity: item.minQuantity,
             notes:
               item.notes ||
               existingItem.notes,
@@ -190,9 +150,7 @@ export default function PantryPage() {
           );
         } else {
           const savedItem =
-            await saveCloudPantryItem(
-              item
-            );
+            await saveCloudPantryItem(item);
 
           setPantry([
             ...pantry,
@@ -224,9 +182,7 @@ export default function PantryPage() {
     }
   }
 
-  async function handleDelete(
-    id: string
-  ) {
+  async function handleDelete(id: string) {
     try {
       await deleteCloudPantryItem(id);
 
@@ -238,8 +194,7 @@ export default function PantryPage() {
 
       showToast({
         type: "success",
-        message:
-          "Pantry item deleted.",
+        message: "Pantry item deleted.",
       });
     } catch (error) {
       showToast({
@@ -252,14 +207,13 @@ export default function PantryPage() {
     }
   }
 
-  const filteredItems =
-    pantry.filter((item) => {
-      const matchesSearch =
-        item.name
-          .toLowerCase()
-          .includes(
-            searchTerm.toLowerCase()
-          );
+  const filteredItems = pantry.filter(
+    (item) => {
+      const matchesSearch = item.name
+        .toLowerCase()
+        .includes(
+          searchTerm.toLowerCase()
+        );
 
       const matchesCategory =
         selectedCategory === "All" ||
@@ -270,14 +224,13 @@ export default function PantryPage() {
         matchesSearch &&
         matchesCategory
       );
-    });
+    }
+  );
 
-  const lowStockCount =
-    pantry.filter(
-      (item) =>
-        item.quantity <=
-        item.minQuantity
-    ).length;
+  const lowStockCount = pantry.filter(
+    (item) =>
+      item.quantity <= item.minQuantity
+  ).length;
 
   if (!isLoaded) {
     return (
@@ -368,8 +321,7 @@ export default function PantryPage() {
         categories={
           new Set(
             pantry.map(
-              (item) =>
-                item.category
+              (item) => item.category
             )
           ).size
         }

@@ -65,29 +65,54 @@ export function KitchenProvider({
   const [planner, setPlanner] =
     useState<MealPlan[]>([]);
 
-  const [isKitchenLoaded, setIsKitchenLoaded] =
-    useState(false);
+  const [
+    isKitchenLoaded,
+    setIsKitchenLoaded,
+  ] = useState(false);
 
   useEffect(() => {
+    const supabase = createClient();
+
     let isMounted = true;
+    let latestLoadRequest = 0;
+
+    function clearKitchenData() {
+      setPantry([]);
+      setRecipes([]);
+      setShopping([]);
+      setPlanner([]);
+    }
 
     async function loadKitchenData() {
-      try {
-        const supabase = createClient();
+      const currentRequest =
+        ++latestLoadRequest;
 
+      if (isMounted) {
+        setIsKitchenLoaded(false);
+        clearKitchenData();
+      }
+
+      try {
         const {
           data: { user },
           error: userError,
         } = await supabase.auth.getUser();
 
-        if (userError || !user) {
-          if (isMounted) {
-            setPantry([]);
-            setRecipes([]);
-            setShopping([]);
-            setPlanner([]);
-          }
+        if (
+          !isMounted ||
+          currentRequest !== latestLoadRequest
+        ) {
+          return;
+        }
 
+        if (userError) {
+          throw new Error(
+            userError.message
+          );
+        }
+
+        if (!user) {
+          clearKitchenData();
           return;
         }
 
@@ -103,7 +128,12 @@ export function KitchenProvider({
           loadCloudPlanner(),
         ]);
 
-        if (!isMounted) return;
+        if (
+          !isMounted ||
+          currentRequest !== latestLoadRequest
+        ) {
+          return;
+        }
 
         setPantry(cloudPantry);
         setRecipes(cloudRecipes);
@@ -115,14 +145,19 @@ export function KitchenProvider({
           error
         );
 
-        if (isMounted) {
-          setPantry([]);
-          setRecipes([]);
-          setShopping([]);
-          setPlanner([]);
+        if (
+          isMounted &&
+          currentRequest ===
+            latestLoadRequest
+        ) {
+          clearKitchenData();
         }
       } finally {
-        if (isMounted) {
+        if (
+          isMounted &&
+          currentRequest ===
+            latestLoadRequest
+        ) {
           setIsKitchenLoaded(true);
         }
       }
@@ -130,8 +165,35 @@ export function KitchenProvider({
 
     void loadKitchenData();
 
+    const {
+      data: { subscription },
+    } =
+      supabase.auth.onAuthStateChange(
+        (event) => {
+          if (!isMounted) {
+            return;
+          }
+
+          if (event === "SIGNED_OUT") {
+            latestLoadRequest += 1;
+            clearKitchenData();
+            setIsKitchenLoaded(true);
+            return;
+          }
+
+          if (
+            event === "SIGNED_IN" ||
+            event === "USER_UPDATED"
+          ) {
+            void loadKitchenData();
+          }
+        }
+      );
+
     return () => {
       isMounted = false;
+      latestLoadRequest += 1;
+      subscription.unsubscribe();
     };
   }, []);
 

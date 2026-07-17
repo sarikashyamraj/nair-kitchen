@@ -19,10 +19,7 @@ import {
   deleteCloudTransaction,
 } from "../../services/budgetService";
 
-import {
-  loadGroceryTransactions,
-  loadMonthlyBudgets,
-} from "../../lib/budgetStorage";
+
 import { loadPreferences } from "../../lib/preferencesStorage";
 import { formatDateByPreference } from "../../lib/dateFormatter";
 function getMonthKey(date: Date) {
@@ -96,56 +93,16 @@ const [isSaving, setIsSaving] = useState(false);
 
       refreshPreferences();
 
-      let cloudBudgets =
-        await loadCloudBudgets();
+     const cloudBudgets =
+  await loadCloudBudgets();
 
-      let cloudTransactions =
-        await loadCloudTransactions();
+const cloudTransactions =
+  await loadCloudTransactions();
 
-      // First-time migration
-      if (
-        cloudBudgets.length === 0
-      ) {
-        const localBudgets =
-          loadMonthlyBudgets();
+if (!isMounted) return;
 
-        if (localBudgets.length > 0) {
-          cloudBudgets =
-            await Promise.all(
-              localBudgets.map(
-                saveCloudBudget
-              )
-            );
-        }
-      }
-
-      if (
-        cloudTransactions.length ===
-        0
-      ) {
-        const localTransactions =
-          loadGroceryTransactions();
-
-        if (
-          localTransactions.length >
-          0
-        ) {
-          cloudTransactions =
-            await Promise.all(
-              localTransactions.map(
-                saveCloudTransaction
-              )
-            );
-        }
-      }
-
-      if (!isMounted) return;
-
-      setBudgets(cloudBudgets);
-      setTransactions(
-        cloudTransactions
-      );
-
+setBudgets(cloudBudgets);
+setTransactions(cloudTransactions);
       window.addEventListener(
         "preferences-updated",
         refreshPreferences

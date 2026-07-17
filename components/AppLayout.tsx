@@ -1,12 +1,25 @@
+"use client";
+
 import Sidebar from "./Sidebar";
 import MobileMenu from "./layout/MobileMenu";
 import TopHeader from "./layout/TopHeader";
+import AppLoader from "./common/AppLoader";
+
+import { useKitchen } from "../context/KitchenContext";
 
 type AppLayoutProps = {
   children: React.ReactNode;
 };
 
-export default function AppLayout({ children }: AppLayoutProps) {
+export default function AppLayout({
+  children,
+}: AppLayoutProps) {
+  const { isKitchenLoaded } = useKitchen();
+
+  if (!isKitchenLoaded) {
+    return <AppLoader />;
+  }
+
   return (
     <div className="min-h-screen bg-[#FFFDF8]">
       <div className="flex">
