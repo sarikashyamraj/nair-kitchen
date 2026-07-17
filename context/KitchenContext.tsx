@@ -11,36 +11,13 @@ import { PantryItem } from "../types/pantry";
 import { Recipe } from "../types/recipe";
 import { ShoppingItem } from "../types/shopping";
 import { MealPlan } from "../types/planner";
+
 import { createClient } from "../utils/supabase/client";
-import {
-  loadCloudPantry,
-  saveCloudPantryItem,
-} from "../services/pantryService";
 
-import {
-  loadCloudRecipes,
-  saveCloudRecipe,
-} from "../services/recipeService";
-
-import {
-  loadCloudGrocery,
-  saveCloudGroceryItems,
-} from "../services/groceryService";
-
-import {
-  loadCloudPlanner,
-  saveCloudPlanner,
-} from "../services/plannerService";
-
-import { loadPantry } from "../lib/pantryStorage";
-import { loadRecipes } from "../lib/recipeStorage";
-import { loadShopping } from "../lib/shoppingStorage";
-import { loadPlanner } from "../lib/plannerStorage";
-
-import { defaultPantry } from "../data/defaultPantry";
-import { defaultRecipes } from "../data/defaultRecipes";
-import { defaultShopping } from "../data/defaultShopping";
-import { defaultPlanner } from "../data/defaultPlanner";
+import { loadCloudPantry } from "../services/pantryService";
+import { loadCloudRecipes } from "../services/recipeService";
+import { loadCloudGrocery } from "../services/groceryService";
+import { loadCloudPlanner } from "../services/plannerService";
 
 type KitchenContextType = {
   pantry: PantryItem[];
@@ -95,118 +72,55 @@ export function KitchenProvider({
     let isMounted = true;
 
     async function loadKitchenData() {
-  try {
-    const supabase = createClient();
+      try {
+        const supabase = createClient();
 
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser();
+        const {
+          data: { user },
+          error: userError,
+        } = await supabase.auth.getUser();
 
-    if (userError || !user) {
-      if (isMounted) {
-        setIsKitchenLoaded(true);
-      }
-
-      return;
-    }
-
-    const [
-      cloudPantry,
-      cloudRecipes,
-      cloudShopping,
-      cloudPlanner,
-    ] = await Promise.all([
-      loadCloudPantry(),
-      loadCloudRecipes(),
-      loadCloudGrocery(),
-      loadCloudPlanner(),
-    ]);
-
-        let resolvedPantry = cloudPantry;
-        let resolvedRecipes = cloudRecipes;
-        let resolvedShopping = cloudShopping;
-        let resolvedPlanner = cloudPlanner;
-
-        if (cloudPantry.length === 0) {
-          const localPantry = loadPantry();
-
-          const pantryToMigrate =
-            localPantry.length > 0
-              ? localPantry
-              : defaultPantry;
-
-          resolvedPantry =
-            await Promise.all(
-              pantryToMigrate.map((item) =>
-                saveCloudPantryItem(item)
-              )
-            );
-        }
-
-        if (cloudRecipes.length === 0) {
-          const localRecipes =
-            loadRecipes();
-
-          const recipesToMigrate =
-            localRecipes.length > 0
-              ? localRecipes
-              : defaultRecipes;
-
-          resolvedRecipes =
-            await Promise.all(
-              recipesToMigrate.map(
-                (recipe) =>
-                  saveCloudRecipe(recipe)
-              )
-            );
-        }
-
-        if (cloudShopping.length === 0) {
-          const localShopping =
-            loadShopping();
-
-          const shoppingToMigrate =
-            localShopping.length > 0
-              ? localShopping
-              : defaultShopping;
-
-          if (
-            shoppingToMigrate.length > 0
-          ) {
-            resolvedShopping =
-              await saveCloudGroceryItems(
-                shoppingToMigrate
-              );
+        if (userError || !user) {
+          if (isMounted) {
+            setPantry([]);
+            setRecipes([]);
+            setShopping([]);
+            setPlanner([]);
           }
+
+          return;
         }
 
-        if (cloudPlanner.length === 0) {
-          const localPlanner =
-            loadPlanner();
-
-          const plannerToMigrate =
-            localPlanner.length > 0
-              ? localPlanner
-              : defaultPlanner;
-
-          resolvedPlanner =
-            await saveCloudPlanner(
-              plannerToMigrate
-            );
-        }
+        const [
+          cloudPantry,
+          cloudRecipes,
+          cloudShopping,
+          cloudPlanner,
+        ] = await Promise.all([
+          loadCloudPantry(),
+          loadCloudRecipes(),
+          loadCloudGrocery(),
+          loadCloudPlanner(),
+        ]);
 
         if (!isMounted) return;
 
-        setPantry(resolvedPantry);
-        setRecipes(resolvedRecipes);
-        setShopping(resolvedShopping);
-        setPlanner(resolvedPlanner);
+        setPantry(cloudPantry);
+        setRecipes(cloudRecipes);
+        setShopping(cloudShopping);
+        setPlanner(cloudPlanner);
       } catch (error) {
         console.error(
           "Unable to load Kitchen data:",
           error
         );
+
+        if (isMounted) {
+          setPantry([]);
+          setRecipes([]);
+          setShopping([]);
+          setPlanner([]);
+        }
       } finally {
         if (isMounted) {
           setIsKitchenLoaded(true);
