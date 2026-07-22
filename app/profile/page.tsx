@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { uploadProfileImage } from "../../services/profileImageService";
 import AppLayout from "../../components/AppLayout";
 import ConfirmModal from "../../components/common/ConfirmModal";
@@ -19,6 +20,8 @@ import {
   saveCloudFamilyMember,
   saveCloudProfile,
 } from "../../services/profileService";
+
+import { createClient } from "../../utils/supabase/client";
 
 import {
   loadFamilyMembers,
@@ -50,6 +53,8 @@ const emptyMemberForm: MemberFormData = {
 
 export default function ProfilePage() {
   const { showToast } = useToast();
+  const router = useRouter();
+  const supabase = createClient();
   const [profile, setProfile] =
     useState<UserProfile>(defaultUserProfile);
 
@@ -63,6 +68,13 @@ const [isSavingProfile, setIsSavingProfile] =
 const [isSavingMember, setIsSavingMember] =
   useState(false);
 const [isDeletingMember, setIsDeletingMember] =
+  useState(false);
+  const [
+  isDeleteAccountModalOpen,
+  setIsDeleteAccountModalOpen,
+] = useState(false);
+
+const [isDeletingAccount, setIsDeletingAccount] =
   useState(false);
 const [loadError, setLoadError] = useState("");
   const [isProfileFormOpen, setIsProfileFormOpen] =
@@ -87,7 +99,7 @@ const [memberToDelete, setMemberToDelete] =
   useState<FamilyMember | null>(null);
   useEffect(() => {
   let isMounted = true;
-
+  
   async function loadProfileData() {
     try {
       setLoadError("");
@@ -428,16 +440,24 @@ async function handleMemberPhotoChange(
           </div>
 
           <div className="mt-6 flex flex-col gap-5 sm:flex-row sm:items-center">
-            <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-full border-4 border-[#D89B3C] bg-[#F4E8D0] shadow-sm">
-              <Image
-  src={profile.profileImage}
-  alt={`${profile.name} profile`}
-  fill
-  sizes="96px"
-  className="object-cover object-[65%_35%]"
-  priority
-/>
-            </div>
+            <div className="relative flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-full border-4 border-[#D89B3C] bg-[#F4E8D0] shadow-sm">
+  {profile.profileImage ? (
+    <Image
+      src={profile.profileImage}
+      alt={`${profile.name} profile`}
+      fill
+      sizes="96px"
+      className="object-cover object-[65%_35%]"
+      priority
+    />
+  ) : (
+    <span className="text-3xl font-bold text-[#2F6B3C]">
+      {profile.name
+        ? profile.name.charAt(0).toUpperCase()
+        : "?"}
+    </span>
+  )}
+</div>
 
             <div>
               <h2 className="text-2xl font-bold text-[#5A4032]">
@@ -564,7 +584,38 @@ async function handleMemberPhotoChange(
             )}
           </div>
         </section>
+{/* Danger Zone */}
+<section className="rounded-2xl border border-red-200 bg-red-50 p-5 shadow-sm sm:p-6">
+  <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div>
+      <h2 className="text-xl font-bold text-red-700">
+        ⚠️ Danger Zone
+      </h2>
 
+      <h3 className="mt-3 font-bold text-red-700">
+        Delete Account
+      </h3>
+
+      <p className="mt-1 max-w-2xl text-sm leading-6 text-red-600">
+        Permanently delete your Kitchen Brain account and all associated data,
+        including your pantry, recipes, grocery list, planner, budget, family
+        members, profile, and login account.
+      </p>
+
+      <p className="mt-2 text-sm font-semibold text-red-700">
+        This action cannot be undone.
+      </p>
+    </div>
+
+    <button
+      type="button"
+      onClick={() => setIsDeleteAccountModalOpen(true)}
+      className="shrink-0 rounded-xl bg-red-600 px-5 py-3 font-semibold text-white transition hover:bg-red-700"
+    >
+      Delete Account
+    </button>
+  </div>
+</section>
         {/* Edit Profile Modal */}
         {isProfileFormOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
@@ -946,7 +997,73 @@ async function handleMemberPhotoChange(
   }
 }}
 />
-      
+  <ConfirmModal
+  isOpen={isDeleteAccountModalOpen}
+  title="Delete Account"
+  message="Deleting your account will permanently remove your Kitchen Brain account and all associated data."
+  confirmText="Delete Forever"
+  cancelText="Cancel"
+  loadingText="Deleting Account..."
+  isLoading={isDeletingAccount}
+  onCancel={() => {
+    if (!isDeletingAccount) {
+      setIsDeleteAccountModalOpen(false);
+    }
+  }}
+  onConfirm={async () => {
+    try {
+      setIsDeletingAccount(true);
+
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session) {
+        throw new Error(
+          "Your session has expired. Please sign in again."
+        );
+      }
+
+      const { data, error } =
+        await supabase.functions.invoke(
+          "delete-account",
+          {
+            headers: {
+              Authorization: `Bearer ${session.access_token}`,
+            },
+          }
+        );
+
+      if (error) {
+        throw error;
+      }
+
+      if (!data?.success) {
+        throw new Error(
+          data?.message ||
+            "Unable to delete your account."
+        );
+      }
+
+      await supabase.auth.signOut();
+
+      setIsDeleteAccountModalOpen(false);
+
+      router.replace("/auth/login");
+      router.refresh();
+    } catch (error) {
+      showToast({
+        type: "error",
+        message:
+          error instanceof Error
+            ? error.message
+            : "Unable to delete your account.",
+      });
+    } finally {
+      setIsDeletingAccount(false);
+    }
+  }}
+/>   
             </div>
     )}
   </AppLayout>
