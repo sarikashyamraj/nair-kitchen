@@ -1,5 +1,6 @@
 "use client";
-
+import MealSummary from "../components/dashboard/MealSummary";
+import { KBIcons } from "../components/icons/KBIcons";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
@@ -276,32 +277,31 @@ export default function Home() {
 
   const mealSlots = [
     {
-      emoji: "🥤",
-      label: "Morning Drink",
+      icon: KBIcons.meals.morningDrink,
+      title: "Morning Drink",
       recipeId: todaysPlan?.morningDrink,
     },
     {
-      emoji: "🍳",
-      label: "Breakfast",
+      icon: KBIcons.meals.breakfast,
+      title: "Breakfast",
       recipeId: todaysPlan?.breakfast,
     },
     {
-      emoji: "🍛",
-      label: "Lunch",
+      icon: KBIcons.meals.lunch,
+      title: "Lunch",
       recipeId: todaysPlan?.lunch,
     },
     {
-      emoji: "🥪",
-      label: "Snack",
+      icon: KBIcons.meals.snack,
+      title: "Snack",
       recipeId: todaysPlan?.snack,
     },
     {
-      emoji: "🥘",
-      label: "Dinner",
+      icon: KBIcons.meals.dinner,
+      title: "Dinner",
       recipeId: todaysPlan?.dinner,
     },
   ];
-
   return (
     <AppLayout>
       <div className="space-y-6 lg:space-y-8">
@@ -331,26 +331,12 @@ export default function Home() {
 
             <div className="mt-4 grid gap-3 sm:mt-5 md:grid-cols-2 md:gap-4">
               {mealSlots.map((meal) => (
-                <div
-                  key={meal.label}
-                  className="rounded-xl border border-[#F4E8D0] bg-gradient-to-br from-[#FFF8EC] to-white p-3 shadow-sm transition-all duration-200 hover:shadow-md sm:rounded-2xl sm:p-5"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-xl shadow-sm sm:h-12 sm:w-12 sm:text-2xl">
-                      {meal.emoji}
-                    </div>
-
-                    <div className="min-w-0">
-                      <p className="text-xs text-gray-500 sm:text-sm">
-                        {meal.label}
-                      </p>
-
-                      <p className="mt-1 truncate text-sm font-semibold text-[#2F6B3C] sm:text-base">
-                        {getRecipeName(meal.recipeId)}
-                      </p>
-                    </div>
-                  </div>
-                </div>
+                <MealSummary
+                  key={meal.title}
+                  icon={meal.icon}
+                  title={meal.title}
+                  recipeName={getRecipeName(meal.recipeId)}
+                />
               ))}
             </div>
           </div>
@@ -462,8 +448,8 @@ export default function Home() {
 
                   <p
                     className={`mt-1 text-lg font-bold ${budgetRemaining < 0
-                        ? "text-red-600"
-                        : "text-green-700"
+                      ? "text-red-600"
+                      : "text-green-700"
                       }`}
                   >
                     {formatCurrency(
@@ -488,10 +474,10 @@ export default function Home() {
                 <div className="mt-2 h-3 w-full overflow-hidden rounded-full bg-[#F4E8D0]">
                   <div
                     className={`h-full rounded-full transition-all ${budgetRemaining < 0
-                        ? "bg-red-500"
-                        : budgetUsedPercentage >= 80
-                          ? "bg-yellow-500"
-                          : "bg-[#2F6B3C]"
+                      ? "bg-red-500"
+                      : budgetUsedPercentage >= 80
+                        ? "bg-yellow-500"
+                        : "bg-[#2F6B3C]"
                       }`}
                     style={{
                       width: `${progressWidth}%`,
