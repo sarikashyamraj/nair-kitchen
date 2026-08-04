@@ -94,24 +94,31 @@ export function KitchenProvider({
 
       try {
         const {
-          data: { user },
-          error: userError,
-        } = await supabase.auth.getUser();
+          data: { session },
+          error: sessionError,
+        } =
+          await supabase.auth.getSession();
 
         if (
           !isMounted ||
-          currentRequest !== latestLoadRequest
+          currentRequest !==
+            latestLoadRequest
         ) {
           return;
         }
 
-        if (userError) {
+        if (sessionError) {
           throw new Error(
-            userError.message
+            sessionError.message
           );
         }
 
-        if (!user) {
+        /*
+         * A missing session is expected on public
+         * authentication pages such as Login,
+         * Sign Up and Forgot Password.
+         */
+        if (!session?.user) {
           clearKitchenData();
           return;
         }
@@ -130,7 +137,8 @@ export function KitchenProvider({
 
         if (
           !isMounted ||
-          currentRequest !== latestLoadRequest
+          currentRequest !==
+            latestLoadRequest
         ) {
           return;
         }
@@ -183,6 +191,8 @@ export function KitchenProvider({
 
           if (
             event === "SIGNED_IN" ||
+            event ===
+              "TOKEN_REFRESHED" ||
             event === "USER_UPDATED"
           ) {
             void loadKitchenData();

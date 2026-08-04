@@ -3,7 +3,7 @@
 import { useState } from "react";
 
 import KBButton from "../../components/ui/KBButton";
-
+import KBCard from "../../components/ui/KBCard";
 export default function UIPreviewPage() {
   const [isLoading, setIsLoading] =
     useState(false);
@@ -254,6 +254,189 @@ export default function UIPreviewPage() {
             ))}
           </div>
         </section>
+        <section className="rounded-2xl border border-[#E8DDC7] bg-white p-6 shadow-sm">
+  <div>
+    <h2 className="text-2xl font-bold text-[#2F6B3C]">
+      KBCard
+    </h2>
+
+    <p className="mt-1 text-sm text-gray-500">
+      Review card variants, padding, structured content,
+      actions, loading, selection and interactive behaviour.
+    </p>
+  </div>
+
+  <div className="mt-8 grid gap-6 lg:grid-cols-2">
+    <KBCard
+      title="Default Card"
+      subtitle="General information container"
+    >
+      <p className="text-sm leading-6 text-gray-600">
+        This is the default Kitchen Brain card used for
+        standard page content.
+      </p>
+    </KBCard>
+
+    <KBCard
+      variant="outlined"
+      title="Outlined Card"
+      subtitle="Suitable for forms and settings"
+      icon={<span>⚙️</span>}
+    >
+      <p className="text-sm leading-6 text-gray-600">
+        The outlined variant has no elevation and keeps the
+        interface visually light.
+      </p>
+    </KBCard>
+
+    <KBCard
+      variant="elevated"
+      title="Elevated Card"
+      subtitle="Suitable for important dashboard content"
+      icon={<span>📊</span>}
+      badge={
+        <span className="rounded-full bg-[#EAF5EC] px-3 py-1 text-xs font-semibold text-[#2F6B3C]">
+          Healthy
+        </span>
+      }
+      footer="Updated today"
+    >
+      <p className="text-3xl font-bold text-[#2F6B3C]">
+        92%
+      </p>
+
+      <p className="mt-1 text-sm text-gray-500">
+        Kitchen health score
+      </p>
+    </KBCard>
+
+    <KBCard
+      variant="interactive"
+      title="Interactive Card"
+      subtitle="Click or use Enter and Space"
+      icon={<span>🥫</span>}
+      onClick={() => {
+        window.alert(
+          "Interactive KBCard test passed."
+        );
+      }}
+      actions={
+        <>
+          <KBButton size="sm">
+            Open Pantry
+          </KBButton>
+
+          <KBButton
+            size="sm"
+            variant="secondary"
+          >
+            View Details
+          </KBButton>
+        </>
+      }
+    >
+      <p className="text-sm leading-6 text-gray-600">
+        Interactive cards provide hover, keyboard and focus
+        behaviour.
+      </p>
+    </KBCard>
+
+    <KBCard
+      title="Selected Card"
+      subtitle="Represents the active selection"
+      selected
+      icon={<span>✓</span>}
+    >
+      <p className="text-sm text-gray-600">
+        This card is currently selected.
+      </p>
+    </KBCard>
+
+    <KBCard
+      title="Disabled Card"
+      subtitle="Unavailable interaction"
+      variant="interactive"
+      disabled
+      onClick={() => {
+        window.alert(
+          "This should not appear."
+        );
+      }}
+    >
+      <p className="text-sm text-gray-600">
+        This card should not respond to clicks or keyboard
+        activation.
+      </p>
+    </KBCard>
+
+    <KBCard
+      padding="compact"
+      title="Compact Padding"
+      subtitle="For dense information"
+    >
+      <p className="text-sm text-gray-600">
+        Compact cards use less internal spacing.
+      </p>
+    </KBCard>
+
+    <KBCard
+      padding="spacious"
+      title="Spacious Padding"
+      subtitle="For featured content"
+    >
+      <p className="text-sm leading-6 text-gray-600">
+        Spacious cards provide additional breathing room for
+        important or promotional content.
+      </p>
+    </KBCard>
+
+    <KBCard loading />
+
+    <KBCard
+      title="Image Card"
+      subtitle="Prepared for future recipe imagery"
+      image={
+        <div className="flex h-40 items-center justify-center bg-[#FFF6E3] text-5xl">
+          🍲
+        </div>
+      }
+      footer="Recipe preview"
+    >
+      <p className="text-sm text-gray-600">
+        Image support will later be used by Recipes and AI
+        recommendations.
+      </p>
+    </KBCard>
+  </div>
+</section>
+
+<section className="rounded-2xl border border-[#E8DDC7] bg-white p-6 shadow-sm">
+  <h2 className="text-xl font-bold text-[#2F6B3C]">
+    KBCard Acceptance Checklist
+  </h2>
+
+  <div className="mt-4 grid gap-3 text-sm text-[#5A4032] sm:grid-cols-2">
+    {[
+      "All four variants render correctly",
+      "Compact, comfortable and spacious padding work",
+      "Icon, title, subtitle and badge align correctly",
+      "Actions and footer render correctly",
+      "Loading skeleton displays correctly",
+      "Selected state is clearly visible",
+      "Disabled card cannot be activated",
+      "Interactive card works with mouse",
+      "Enter and Space activate interactive cards",
+      "Mobile layout has no horizontal overflow",
+    ].map((item) => (
+      <div
+        key={item}
+        className="rounded-xl border border-[#F0E4CF] bg-[#FFFDF8] px-4 py-3"
+      >
+        □ {item}
+      </div>
+    ))}
+  </div>
+</section>
       </div>
     </main>
   );

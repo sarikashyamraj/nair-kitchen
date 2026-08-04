@@ -1,17 +1,4 @@
-export type CurrencyCode =
-  | "AED"
-  | "INR"
-  | "USD"
-  | "GBP"
-  | "EUR"
-  | "AUD"
-  | "CAD"
-  | "SGD"
-  | "SAR"
-  | "QAR"
-  | "OMR"
-  | "KWD"
-  | "JPY";
+export type CurrencyCode = string;
 
 export type DateFormat =
   | "DD/MM/YYYY"
