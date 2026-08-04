@@ -1,5 +1,5 @@
 "use client";
-
+import KBButton from "../../components/ui/KBButton";
 import { useEffect, useState } from "react";
 import { countries } from "../../data/countries";
 import AppLayout from "../../components/AppLayout";
@@ -336,23 +336,23 @@ if (loadError) {
   <div className="mt-5 grid grid-cols-2 gap-3">
     {(["Metric", "Imperial"] as MeasurementSystem[]).map(
       (system) => (
-        <button
-          key={system}
-          type="button"
-          onClick={() =>
-            updatePreference(
-              "measurementSystem",
-              system
-            )
-          }
-          className={`rounded-xl border px-4 py-3 font-semibold transition ${
-            preferences.measurementSystem === system
-              ? "border-[#2F6B3C] bg-[#2F6B3C] text-white"
-              : "border-[#EADCC4] bg-[#FFF8EC] text-[#5A4032]"
-          }`}
-        >
-          {system}
-        </button>
+        <KBButton
+  key={system}
+  type="button"
+  onClick={() =>
+    updatePreference(
+      "measurementSystem",
+      system
+    )
+  }
+  variant={
+    preferences.measurementSystem === system
+      ? "primary"
+      : "secondary"
+  }
+>
+  {system}
+</KBButton>
       )
     )}
   </div>
@@ -451,16 +451,12 @@ if (loadError) {
         "Save your changes to apply them across the app."}
     </p>
 
-    <button
-      type="button"
-      onClick={handleSave}
-      disabled={isSaving}
-      className="rounded-xl bg-[#2F6B3C] px-6 py-3 font-semibold text-white transition hover:bg-[#255A32] disabled:cursor-not-allowed disabled:opacity-60"
-    >
-      {isSaving
-        ? "Saving..."
-        : "Save Settings"}
-    </button>
+    <KBButton
+  onClick={handleSave}
+  loading={isSaving}
+>
+  Save Settings
+</KBButton>
   </div>
 </section>
       </div>
