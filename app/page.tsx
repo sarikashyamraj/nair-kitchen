@@ -12,7 +12,9 @@ import {
 } from "../services/budgetService";
 
 import { loadPreferences } from "../lib/preferencesStorage";
-
+import KBStatCard, {
+  type KBStatCardAccent,
+} from "../components/dashboard/KBStatCard";
 import {
   BookOpen,
   Package,
@@ -20,6 +22,7 @@ import {
   HeartPulse,
   WalletCards,
 } from "lucide-react";
+
 function getMonthKey(date: Date) {
   return `${date.getFullYear()}-${String(
     date.getMonth() + 1
@@ -38,160 +41,161 @@ function formatCurrency(
 }
 export default function Home() {
   const { pantry, shopping, planner, recipes } = useKitchen();
-const [monthlyBudget, setMonthlyBudget] = useState(0);
-const [monthlySpent, setMonthlySpent] = useState(0);
-const [budgetCurrency, setBudgetCurrency] = useState("AED");
-const [isBudgetLoaded, setIsBudgetLoaded] =
-  useState(false);
 
-const [budgetLoadError, setBudgetLoadError] =
-  useState("");
-useEffect(() => {
-  let isMounted = true;
+  const [monthlyBudget, setMonthlyBudget] = useState(0);
+  const [monthlySpent, setMonthlySpent] = useState(0);
+  const [budgetCurrency, setBudgetCurrency] = useState("AED");
+  const [isBudgetLoaded, setIsBudgetLoaded] =
+    useState(false);
 
-  async function refreshBudgetSummary() {
-    try {
-      const currentMonth =
-        getMonthKey(new Date());
+  const [budgetLoadError, setBudgetLoadError] =
+    useState("");
+  useEffect(() => {
+    let isMounted = true;
 
-      const preferences =
-        loadPreferences();
+    async function refreshBudgetSummary() {
+      try {
+        const currentMonth =
+          getMonthKey(new Date());
 
-      const [
-        budgets,
-        transactions,
-      ] = await Promise.all([
-        loadCloudBudgets(),
-        loadCloudTransactions(),
-      ]);
+        const preferences =
+          loadPreferences();
 
-      if (!isMounted) return;
+        const [
+          budgets,
+          transactions,
+        ] = await Promise.all([
+          loadCloudBudgets(),
+          loadCloudTransactions(),
+        ]);
 
-      const currentBudget =
-        budgets.find(
-          (budget) =>
-            budget.month ===
-            currentMonth
-        );
+        if (!isMounted) return;
 
-      const currentMonthSpent =
-        transactions
-          .filter((transaction) =>
-            transaction.date.startsWith(
+        const currentBudget =
+          budgets.find(
+            (budget) =>
+              budget.month ===
               currentMonth
-            )
-          )
-          .reduce(
-            (total, transaction) =>
-              total +
-              transaction.amount,
-            0
           );
 
-      setMonthlyBudget(
-        currentBudget?.amount || 0
-      );
+        const currentMonthSpent =
+          transactions
+            .filter((transaction) =>
+              transaction.date.startsWith(
+                currentMonth
+              )
+            )
+            .reduce(
+              (total, transaction) =>
+                total +
+                transaction.amount,
+              0
+            );
 
-      setMonthlySpent(
-        currentMonthSpent
-      );
+        setMonthlyBudget(
+          currentBudget?.amount || 0
+        );
 
-      setBudgetCurrency(
-        preferences.currency
-      );
+        setMonthlySpent(
+          currentMonthSpent
+        );
 
-      setBudgetLoadError("");
-    } catch (error) {
-      if (!isMounted) return;
+        setBudgetCurrency(
+          preferences.currency
+        );
 
-      setBudgetLoadError(
-        error instanceof Error
-          ? error.message
-          : "Unable to load dashboard budget."
-      );
-    } finally {
-      if (isMounted) {
-        setIsBudgetLoaded(true);
+        setBudgetLoadError("");
+      } catch (error) {
+        if (!isMounted) return;
+
+        setBudgetLoadError(
+          error instanceof Error
+            ? error.message
+            : "Unable to load dashboard budget."
+        );
+      } finally {
+        if (isMounted) {
+          setIsBudgetLoaded(true);
+        }
       }
     }
-  }
 
-  function handleBudgetUpdated() {
+    function handleBudgetUpdated() {
+      void refreshBudgetSummary();
+    }
+
+    function handlePreferencesUpdated() {
+      void refreshBudgetSummary();
+    }
+
     void refreshBudgetSummary();
-  }
 
-  function handlePreferencesUpdated() {
-    void refreshBudgetSummary();
-  }
-
-  void refreshBudgetSummary();
-
-  window.addEventListener(
-    "budget-updated",
-    handleBudgetUpdated
-  );
-
-  window.addEventListener(
-    "preferences-updated",
-    handlePreferencesUpdated
-  );
-
-  return () => {
-    isMounted = false;
-
-    window.removeEventListener(
+    window.addEventListener(
       "budget-updated",
       handleBudgetUpdated
     );
 
-    window.removeEventListener(
+    window.addEventListener(
       "preferences-updated",
       handlePreferencesUpdated
     );
-  };
-}, []);
-if (!isBudgetLoaded) {
-  return (
-    <AppLayout>
-      <div className="flex min-h-[60vh] items-center justify-center">
-        <p className="font-semibold text-[#2F6B3C]">
-          Loading Dashboard...
-        </p>
-      </div>
-    </AppLayout>
-  );
-}
 
-if (budgetLoadError) {
-  return (
-    <AppLayout>
-      <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-red-700">
-        {budgetLoadError}
-      </div>
-    </AppLayout>
-  );
-}
+    return () => {
+      isMounted = false;
+
+      window.removeEventListener(
+        "budget-updated",
+        handleBudgetUpdated
+      );
+
+      window.removeEventListener(
+        "preferences-updated",
+        handlePreferencesUpdated
+      );
+    };
+  }, []);
+  if (!isBudgetLoaded) {
+    return (
+      <AppLayout>
+        <div className="flex min-h-[60vh] items-center justify-center">
+          <p className="font-semibold text-[#2F6B3C]">
+            Loading Dashboard...
+          </p>
+        </div>
+      </AppLayout>
+    );
+  }
+
+  if (budgetLoadError) {
+    return (
+      <AppLayout>
+        <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-red-700">
+          {budgetLoadError}
+        </div>
+      </AppLayout>
+    );
+  }
   const currentDay = new Date().toLocaleDateString("en-US", {
     weekday: "long",
   });
 
   const todaysPlan = [...planner]
-  .reverse()
-  .find((plan) => plan.day === currentDay);
+    .reverse()
+    .find((plan) => plan.day === currentDay);
 
-function getRecipeName(recipeId?: string) {
-  if (!recipeId) {
-    return "Not planned";
+  function getRecipeName(recipeId?: string) {
+    if (!recipeId) {
+      return "Not planned";
+    }
+
+    const recipe = recipes.find(
+      (item) => item.id === recipeId
+    );
+
+    return recipe?.name || "Not planned";
   }
 
-  const recipe = recipes.find(
-    (item) => item.id === recipeId
-  );
-
-  return recipe?.name || "Not planned";
-}
-
-const totalPantryItems = pantry.length;
+  const totalPantryItems = pantry.length;
 
   const lowStockItems = pantry.filter(
     (item) => item.quantity <= item.minQuantity
@@ -201,68 +205,74 @@ const totalPantryItems = pantry.length;
     totalPantryItems === 0
       ? 0
       : Math.round(
-          ((totalPantryItems - lowStockItems) / totalPantryItems) * 100
-        );
+        ((totalPantryItems - lowStockItems) / totalPantryItems) * 100
+      );
 
   const groceryRemaining = shopping.filter(
     (item) => !item.purchased
   ).length;
-const budgetRemaining = monthlyBudget - monthlySpent;
+  const budgetRemaining = monthlyBudget - monthlySpent;
 
-const budgetUsedPercentage =
-  monthlyBudget > 0
-    ? Math.round(
+  const budgetUsedPercentage =
+    monthlyBudget > 0
+      ? Math.round(
         (monthlySpent / monthlyBudget) * 100
       )
-    : 0;
+      : 0;
 
-const progressWidth = Math.min(
-  budgetUsedPercentage,
-  100
-);
-  const stats = [
-    {
-      title: "Pantry Items",
-      value: totalPantryItems,
-      subtitle:
-        lowStockItems === 0
-          ? "Well stocked"
-          : `${lowStockItems} running low`,
-      icon: Package,
-      color: "bg-green-100 text-green-700",
-    },
-    {
-      title: "Recipes",
-      value: recipes.length,
-      subtitle: "Ready to cook",
-      icon: BookOpen,
-      color: "bg-yellow-100 text-yellow-700",
-    },
-    {
-      title: "Grocery",
-      value: groceryRemaining,
-      subtitle:
-        groceryRemaining === 0
-          ? "Completed"
-          : "Items pending",
-      icon: ShoppingCart,
-      color: "bg-blue-100 text-blue-700",
-    },
-    {
-      title: "Kitchen Health",
-      value: `${pantryHealth}%`,
-      subtitle:
-        pantryHealth >= 90
-          ? "Excellent"
-          : pantryHealth >= 70
-          ? "Good"
-          : pantryHealth >= 50
-          ? "Fair"
-          : "Needs attention",
-      icon: HeartPulse,
-      color: "bg-red-100 text-red-700",
-    },
-  ];
+  const progressWidth = Math.min(
+    budgetUsedPercentage,
+    100
+  );
+  const stats: {
+    title: string;
+    value: string | number;
+    subtitle: string;
+    icon: typeof Package;
+    accent: KBStatCardAccent;
+  }[] = [
+      {
+        title: "Pantry Items",
+        value: totalPantryItems,
+        subtitle:
+          lowStockItems === 0
+            ? "Well stocked"
+            : `${lowStockItems} running low`,
+        icon: Package,
+        accent: "green",
+      },
+      {
+        title: "Recipes",
+        value: recipes.length,
+        subtitle: "Ready to cook",
+        icon: BookOpen,
+        accent: "gold",
+      },
+      {
+        title: "Grocery",
+        value: groceryRemaining,
+        subtitle:
+          groceryRemaining === 0
+            ? "Completed"
+            : "Items pending",
+        icon: ShoppingCart,
+        accent: "blue",
+      },
+      {
+        title: "Kitchen Health",
+        value: `${pantryHealth}%`,
+        subtitle:
+          pantryHealth >= 90
+            ? "Excellent"
+            : pantryHealth >= 70
+              ? "Good"
+              : pantryHealth >= 50
+                ? "Fair"
+                : "Needs attention",
+        icon: HeartPulse,
+        accent: "red",
+      },
+    ];
 
   const mealSlots = [
     {
@@ -296,238 +306,218 @@ const progressWidth = Math.min(
     <AppLayout>
       <div className="space-y-6 lg:space-y-8">
         {/* Dashboard Statistics */}
-        <section className="grid grid-cols-2 gap-3 md:grid-cols-4 sm:gap-5">
-          {stats.map((stat) => {
-            const Icon = stat.icon;
-
-            return (
-              <div
-                key={stat.title}
-                className="rounded-2xl border border-[#EADCC4] bg-white p-3 shadow-sm sm:p-5"
-              >
-                <div
-                  className={`flex h-9 w-9 items-center justify-center rounded-xl sm:h-11 sm:w-11 ${stat.color}`}
-                >
-                  <Icon size={20} />
-                </div>
-
-                <h2 className="mt-3 text-2xl font-bold text-[#5A4032] sm:mt-4 sm:text-3xl">
-                  {stat.value}
-                </h2>
-
-                <p className="mt-1 text-xs font-semibold text-[#2F6B3C] sm:text-sm">
-                  {stat.title}
-                </p>
-
-                <p className="mt-1 text-[11px] text-gray-500 sm:text-xs">
-                  {stat.subtitle}
-                </p>
-              </div>
-            );
-          })}
+        <section className="grid grid-cols-2 gap-3 sm:gap-5 md:grid-cols-4">
+          {stats.map((stat) => (
+            <KBStatCard
+              key={stat.title}
+              icon={stat.icon}
+              title={stat.title}
+              value={stat.value}
+              subtitle={stat.subtitle}
+              accent={stat.accent}
+            />
+          ))}
         </section>
 
-        
+
 
         {/* Meal Plan and Pantry Health */}
-<section className="grid gap-5 lg:grid-cols-3 lg:gap-6">
-  {/* Today's Meal Plan */}
-  <div className="rounded-2xl border border-[#EADCC4] bg-white p-4 shadow-sm sm:p-6 lg:col-span-2">
-    <h2 className="text-xl font-bold text-[#2F6B3C] sm:text-2xl">
-      Today&apos;s Meal Plan
-    </h2>
+        <section className="grid gap-5 lg:grid-cols-3 lg:gap-6">
+          {/* Today's Meal Plan */}
+          <div className="rounded-2xl border border-[#EADCC4] bg-white p-4 shadow-sm sm:p-6 lg:col-span-2">
+            <h2 className="text-xl font-bold text-[#2F6B3C] sm:text-2xl">
+              Today&apos;s Meal Plan
+            </h2>
 
-    <div className="mt-4 grid gap-3 sm:mt-5 md:grid-cols-2 md:gap-4">
-      {mealSlots.map((meal) => (
-        <div
-          key={meal.label}
-          className="rounded-xl border border-[#F4E8D0] bg-gradient-to-br from-[#FFF8EC] to-white p-3 shadow-sm transition-all duration-200 hover:shadow-md sm:rounded-2xl sm:p-5"
-        >
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-xl shadow-sm sm:h-12 sm:w-12 sm:text-2xl">
-              {meal.emoji}
-            </div>
+            <div className="mt-4 grid gap-3 sm:mt-5 md:grid-cols-2 md:gap-4">
+              {mealSlots.map((meal) => (
+                <div
+                  key={meal.label}
+                  className="rounded-xl border border-[#F4E8D0] bg-gradient-to-br from-[#FFF8EC] to-white p-3 shadow-sm transition-all duration-200 hover:shadow-md sm:rounded-2xl sm:p-5"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-xl shadow-sm sm:h-12 sm:w-12 sm:text-2xl">
+                      {meal.emoji}
+                    </div>
 
-            <div className="min-w-0">
-              <p className="text-xs text-gray-500 sm:text-sm">
-                {meal.label}
-              </p>
+                    <div className="min-w-0">
+                      <p className="text-xs text-gray-500 sm:text-sm">
+                        {meal.label}
+                      </p>
 
-              <p className="mt-1 truncate text-sm font-semibold text-[#2F6B3C] sm:text-base">
-                {getRecipeName(meal.recipeId)}
-              </p>
-            </div>
-          </div>
-        </div>
-      ))}
-    </div>
-  </div>
-
-  {/* Pantry Health */}
-        <div className="rounded-2xl border border-[#EADCC4] bg-white p-4 shadow-sm sm:p-6">
-          <h2 className="text-xl font-bold text-[#2F6B3C] sm:text-2xl">
-            Pantry Health
-          </h2>
-
-          <p className="mt-4 text-4xl font-bold text-[#5A4032] sm:mt-5 sm:text-5xl">
-            {pantryHealth}%
-          </p>
-
-          <div className="mt-4 h-3 w-full rounded-full bg-[#F4E8D0] sm:mt-5 sm:h-4">
-            <div
-              className="h-full rounded-full bg-[#2F6B3C]"
-              style={{ width: `${pantryHealth}%` }}
-            />
-          </div>
-
-          <p className="mt-3 text-sm text-gray-500 sm:mt-4 sm:text-base">
-            {lowStockItems === 0
-              ? "Everything looks well stocked."
-              : `${lowStockItems} item(s) are running low.`}
-          </p>
- </div>
-            </section>
-
-      {/* Monthly Budget */}
-      <section className="rounded-2xl border border-[#EADCC4] bg-white p-4 shadow-sm sm:p-6">
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex items-start gap-3">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-purple-100 text-purple-700">
-              <WalletCards size={22} />
-            </div>
-
-            <div>
-              <h2 className="text-xl font-bold text-[#2F6B3C] sm:text-2xl">
-                Monthly Grocery Budget
-              </h2>
-
-              <p className="mt-1 text-sm text-gray-500">
-                Current month spending overview
-              </p>
+                      <p className="mt-1 truncate text-sm font-semibold text-[#2F6B3C] sm:text-base">
+                        {getRecipeName(meal.recipeId)}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
 
-          <Link
-            href="/budget"
-            className="shrink-0 rounded-xl border border-[#EADCC4] bg-[#FFF8EC] px-3 py-2 text-sm font-semibold text-[#5A4032] transition hover:bg-[#F4E8D0]"
-          >
-            View Budget
-          </Link>
-        </div>
+          {/* Pantry Health */}
+          <div className="rounded-2xl border border-[#EADCC4] bg-white p-4 shadow-sm sm:p-6">
+            <h2 className="text-xl font-bold text-[#2F6B3C] sm:text-2xl">
+              Pantry Health
+            </h2>
 
-        {monthlyBudget === 0 ? (
-          <div className="mt-5 rounded-xl border border-dashed border-[#EADCC4] bg-[#FFFCF8] p-5 text-center">
-            <p className="font-semibold text-[#2F6B3C]">
-              No monthly budget set
+            <p className="mt-4 text-4xl font-bold text-[#5A4032] sm:mt-5 sm:text-5xl">
+              {pantryHealth}%
             </p>
 
-            <p className="mt-1 text-sm text-gray-500">
-              Set a grocery budget to start tracking your monthly spending.
+            <div className="mt-4 h-3 w-full rounded-full bg-[#F4E8D0] sm:mt-5 sm:h-4">
+              <div
+                className="h-full rounded-full bg-[#2F6B3C]"
+                style={{ width: `${pantryHealth}%` }}
+              />
+            </div>
+
+            <p className="mt-3 text-sm text-gray-500 sm:mt-4 sm:text-base">
+              {lowStockItems === 0
+                ? "Everything looks well stocked."
+                : `${lowStockItems} item(s) are running low.`}
             </p>
+          </div>
+        </section>
+
+        {/* Monthly Budget */}
+        <section className="rounded-2xl border border-[#EADCC4] bg-white p-4 shadow-sm sm:p-6">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex items-start gap-3">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-purple-100 text-purple-700">
+                <WalletCards size={22} />
+              </div>
+
+              <div>
+                <h2 className="text-xl font-bold text-[#2F6B3C] sm:text-2xl">
+                  Monthly Grocery Budget
+                </h2>
+
+                <p className="mt-1 text-sm text-gray-500">
+                  Current month spending overview
+                </p>
+              </div>
+            </div>
 
             <Link
               href="/budget"
-              className="mt-4 inline-flex rounded-xl bg-[#2F6B3C] px-4 py-2 text-sm font-semibold text-white"
+              className="shrink-0 rounded-xl border border-[#EADCC4] bg-[#FFF8EC] px-3 py-2 text-sm font-semibold text-[#5A4032] transition hover:bg-[#F4E8D0]"
             >
-              Set Budget
+              View Budget
             </Link>
           </div>
-        ) : (
-          <>
-            <div className="mt-5 grid grid-cols-2 gap-3 md:grid-cols-3">
-              <div className="rounded-xl bg-[#FFF8EC] p-4">
-                <p className="text-xs text-gray-500">
-                  Budget
-                </p>
 
-                <p className="mt-1 text-lg font-bold text-[#5A4032]">
-                  {formatCurrency(
-                    monthlyBudget,
-                    budgetCurrency
-                  )}
-                </p>
-              </div>
+          {monthlyBudget === 0 ? (
+            <div className="mt-5 rounded-xl border border-dashed border-[#EADCC4] bg-[#FFFCF8] p-5 text-center">
+              <p className="font-semibold text-[#2F6B3C]">
+                No monthly budget set
+              </p>
 
-              <div className="rounded-xl bg-blue-50 p-4">
-                <p className="text-xs text-gray-500">
-                  Spent
-                </p>
+              <p className="mt-1 text-sm text-gray-500">
+                Set a grocery budget to start tracking your monthly spending.
+              </p>
 
-                <p className="mt-1 text-lg font-bold text-blue-700">
-                  {formatCurrency(
-                    monthlySpent,
-                    budgetCurrency
-                  )}
-                </p>
-              </div>
-
-              <div className="col-span-2 rounded-xl bg-green-50 p-4 md:col-span-1">
-                <p className="text-xs text-gray-500">
-                  {budgetRemaining < 0
-                    ? "Over Budget"
-                    : "Remaining"}
-                </p>
-
-                <p
-                  className={`mt-1 text-lg font-bold ${
-                    budgetRemaining < 0
-                      ? "text-red-600"
-                      : "text-green-700"
-                  }`}
-                >
-                  {formatCurrency(
-                    Math.abs(budgetRemaining),
-                    budgetCurrency
-                  )}
-                </p>
-              </div>
+              <Link
+                href="/budget"
+                className="mt-4 inline-flex rounded-xl bg-[#2F6B3C] px-4 py-2 text-sm font-semibold text-white"
+              >
+                Set Budget
+              </Link>
             </div>
+          ) : (
+            <>
+              <div className="mt-5 grid grid-cols-2 gap-3 md:grid-cols-3">
+                <div className="rounded-xl bg-[#FFF8EC] p-4">
+                  <p className="text-xs text-gray-500">
+                    Budget
+                  </p>
 
-            <div className="mt-5">
-              <div className="flex items-center justify-between gap-3">
-                <p className="text-sm font-medium text-[#5A4032]">
-                  Budget used
-                </p>
+                  <p className="mt-1 text-lg font-bold text-[#5A4032]">
+                    {formatCurrency(
+                      monthlyBudget,
+                      budgetCurrency
+                    )}
+                  </p>
+                </div>
 
-                <p className="text-sm font-bold text-[#2F6B3C]">
-                  {budgetUsedPercentage}%
-                </p>
+                <div className="rounded-xl bg-blue-50 p-4">
+                  <p className="text-xs text-gray-500">
+                    Spent
+                  </p>
+
+                  <p className="mt-1 text-lg font-bold text-blue-700">
+                    {formatCurrency(
+                      monthlySpent,
+                      budgetCurrency
+                    )}
+                  </p>
+                </div>
+
+                <div className="col-span-2 rounded-xl bg-green-50 p-4 md:col-span-1">
+                  <p className="text-xs text-gray-500">
+                    {budgetRemaining < 0
+                      ? "Over Budget"
+                      : "Remaining"}
+                  </p>
+
+                  <p
+                    className={`mt-1 text-lg font-bold ${budgetRemaining < 0
+                        ? "text-red-600"
+                        : "text-green-700"
+                      }`}
+                  >
+                    {formatCurrency(
+                      Math.abs(budgetRemaining),
+                      budgetCurrency
+                    )}
+                  </p>
+                </div>
               </div>
 
-              <div className="mt-2 h-3 w-full overflow-hidden rounded-full bg-[#F4E8D0]">
-                <div
-                  className={`h-full rounded-full transition-all ${
-                    budgetRemaining < 0
-                      ? "bg-red-500"
-                      : budgetUsedPercentage >= 80
-                      ? "bg-yellow-500"
-                      : "bg-[#2F6B3C]"
-                  }`}
-                  style={{
-                    width: `${progressWidth}%`,
-                  }}
-                />
-              </div>
+              <div className="mt-5">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-sm font-medium text-[#5A4032]">
+                    Budget used
+                  </p>
 
-              <p className="mt-3 text-sm text-gray-500">
-                {budgetRemaining < 0
-                  ? `You have exceeded this month’s budget by ${formatCurrency(
+                  <p className="text-sm font-bold text-[#2F6B3C]">
+                    {budgetUsedPercentage}%
+                  </p>
+                </div>
+
+                <div className="mt-2 h-3 w-full overflow-hidden rounded-full bg-[#F4E8D0]">
+                  <div
+                    className={`h-full rounded-full transition-all ${budgetRemaining < 0
+                        ? "bg-red-500"
+                        : budgetUsedPercentage >= 80
+                          ? "bg-yellow-500"
+                          : "bg-[#2F6B3C]"
+                      }`}
+                    style={{
+                      width: `${progressWidth}%`,
+                    }}
+                  />
+                </div>
+
+                <p className="mt-3 text-sm text-gray-500">
+                  {budgetRemaining < 0
+                    ? `You have exceeded this month’s budget by ${formatCurrency(
                       Math.abs(budgetRemaining),
                       budgetCurrency
                     )}.`
-                  : `${formatCurrency(
+                    : `${formatCurrency(
                       budgetRemaining,
                       budgetCurrency
                     )} is still available this month.`}
-              </p>
-            </div>
-          </>
-        )}
-      </section>
+                </p>
+              </div>
+            </>
+          )}
+        </section>
 
-      {/* Quick Actions */}
-      <QuickActions />
-    </div>
-  </AppLayout>
-);
+        {/* Quick Actions */}
+        <QuickActions />
+      </div>
+    </AppLayout>
+  );
 }
