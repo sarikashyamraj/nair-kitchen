@@ -1,6 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import {
+  useEffect,
+  useState,
+} from "react";
 
 import AppLayout from "../components/AppLayout";
 import BudgetOverview from "../components/dashboard/BudgetOverview";
@@ -12,12 +15,16 @@ import TodayMealsTimeline from "../components/dashboard/TodayMealsTimeline";
 import { KBIcons } from "../components/icons/KBIcons";
 
 import { useKitchen } from "../context/KitchenContext";
-import { loadPreferences } from "../lib/preferencesStorage";
 
 import {
-  loadCloudBudgets,
-  loadCloudTransactions,
-} from "../services/budgetService";
+  DashboardCacheData,
+  loadDashboardCache,
+  saveDashboardCache,
+} from "../lib/dashboardCache";
+
+import { loadPreferences } from "../lib/preferencesStorage";
+
+import { loadDashboardBudgetSummary } from "../services/dashboardBudgetService";
 
 type LastShoppingProgress = {
   totalItems: number;
@@ -26,18 +33,13 @@ type LastShoppingProgress = {
   completedAt: string;
 };
 
-function getMonthKey(date: Date) {
-  return `${date.getFullYear()}-${String(
-    date.getMonth() + 1
-  ).padStart(2, "0")}`;
-}
-
 export default function Home() {
   const {
     pantry,
     shopping,
     planner,
     recipes,
+    isKitchenLoaded,
   } = useKitchen();
 
   const [monthlyBudget, setMonthlyBudget] =
@@ -62,12 +64,32 @@ export default function Home() {
     null
   );
 
+  const [
+    cachedDashboard,
+    setCachedDashboard,
+  ] = useState<DashboardCacheData | null>(
+    null
+  );
+
   /*
-   * Load the current monthly budget
-   * and grocery transactions.
+   * Load the most recent Dashboard cache.
    *
-   * This no longer blocks the entire Dashboard.
-   * Only BudgetOverview shows its loading state.
+   * This allows the last known Dashboard values
+   * to display immediately while cloud data
+   * refreshes in the background.
+   */
+  useEffect(() => {
+    setCachedDashboard(
+      loadDashboardCache()
+    );
+  }, []);
+
+  /*
+   * Load only the current month’s Budget summary.
+   *
+   * The optimized service fetches:
+   * - One current-month budget record
+   * - Current-month transaction amounts only
    */
   useEffect(() => {
     let isMounted = true;
@@ -78,55 +100,28 @@ export default function Home() {
       }
 
       try {
-        const currentMonth = getMonthKey(
-          new Date()
-        );
-
         const preferences =
           loadPreferences();
 
-        const [
-          budgets,
-          transactions,
-        ] = await Promise.all([
-          loadCloudBudgets(),
-          loadCloudTransactions(),
-        ]);
+        const budgetSummary =
+          await loadDashboardBudgetSummary(
+            preferences.currency
+          );
 
         if (!isMounted) {
           return;
         }
 
-        const currentBudget =
-          budgets.find(
-            (budget) =>
-              budget.month === currentMonth
-          );
-
-        const currentMonthSpent =
-          transactions
-            .filter((transaction) =>
-              transaction.date.startsWith(
-                currentMonth
-              )
-            )
-            .reduce(
-              (total, transaction) =>
-                total +
-                transaction.amount,
-              0
-            );
-
         setMonthlyBudget(
-          currentBudget?.amount || 0
+          budgetSummary.monthlyBudget
         );
 
         setMonthlySpent(
-          currentMonthSpent
+          budgetSummary.monthlySpent
         );
 
         setBudgetCurrency(
-          preferences.currency
+          budgetSummary.currency
         );
 
         setBudgetLoadError("");
@@ -280,7 +275,7 @@ export default function Home() {
   }
 
   /*
-   * Pantry information
+   * Live Pantry information
    */
   const totalPantryItems =
     pantry.length;
@@ -306,47 +301,38 @@ export default function Home() {
         );
 
   /*
-   * Current grocery-list information
+   * Live Grocery information
    */
   const groceryPurchased =
     shopping.filter(
       (item) => item.purchased
     ).length;
 
-  /*
-   * Use active grocery-list progress while
-   * the user is currently checking items.
-   *
-   * After purchased items are removed during
-   * Finish Shopping, use the saved session
-   * progress when its remaining count matches
-   * the current grocery list.
-   */
   const shouldUseLastShoppingProgress =
     groceryPurchased === 0 &&
     lastShoppingProgress !== null &&
     shopping.length ===
       lastShoppingProgress.remainingItems;
 
-  const groceryProgressTotal =
+  const liveGroceryProgressTotal =
     shouldUseLastShoppingProgress
       ? lastShoppingProgress.totalItems
       : shopping.length;
 
-  const groceryProgressPurchased =
+  const liveGroceryProgressPurchased =
     shouldUseLastShoppingProgress
       ? lastShoppingProgress.purchasedItems
       : groceryPurchased;
 
-  const groceryProgressRemaining =
+  const liveGroceryProgressRemaining =
     Math.max(
-      groceryProgressTotal -
-        groceryProgressPurchased,
+      liveGroceryProgressTotal -
+        liveGroceryProgressPurchased,
       0
     );
 
   /*
-   * Today's meal information
+   * Live Meal information
    */
   const mealSlots = [
     {
@@ -386,20 +372,32 @@ export default function Home() {
     },
   ];
 
+  const liveMeals =
+    mealSlots.map((meal) => ({
+      title: meal.title,
+      recipeName:
+        getRecipeName(
+          meal.recipeId
+        ),
+      isPlanned: Boolean(
+        meal.recipeId
+      ),
+    }));
+
   const mealsPlanned =
-    mealSlots.filter((meal) =>
-      Boolean(meal.recipeId)
+    liveMeals.filter(
+      (meal) => meal.isPlanned
     ).length;
 
   /*
-   * Kitchen score
+   * Live Kitchen Score
    */
   const groceryCompletion =
-    groceryProgressTotal === 0
+    liveGroceryProgressTotal === 0
       ? 100
       : Math.round(
-          (groceryProgressPurchased /
-            groceryProgressTotal) *
+          (liveGroceryProgressPurchased /
+            liveGroceryProgressTotal) *
             100
         );
 
@@ -418,32 +416,200 @@ export default function Home() {
       plannerCompletion * 0.25
   );
 
+  /*
+   * Use cached Kitchen data only while current
+   * cloud Kitchen data is still loading.
+   */
+  const useCachedKitchenData =
+    !isKitchenLoaded &&
+    cachedDashboard !== null;
+
+  const displayedPantryItems =
+    useCachedKitchenData
+      ? cachedDashboard.pantryItems
+      : totalPantryItems;
+
+  const displayedGroceryRemaining =
+    useCachedKitchenData
+      ? cachedDashboard.groceryRemaining
+      : liveGroceryProgressRemaining;
+
+  const displayedRecipesSaved =
+    useCachedKitchenData
+      ? cachedDashboard.recipesSaved
+      : recipes.length;
+
+  const displayedMealsPlanned =
+    useCachedKitchenData
+      ? cachedDashboard.mealsPlanned
+      : mealsPlanned;
+
+  const displayedKitchenScore =
+    useCachedKitchenData
+      ? cachedDashboard.kitchenScore
+      : kitchenScore;
+
+  const displayedLowStockItems =
+    useCachedKitchenData
+      ? cachedDashboard.lowStockItems
+      : lowStockPantryItems.map(
+          (item) => ({
+            id: item.id,
+            name: item.name,
+            quantity:
+              item.quantity,
+            unit: item.unit,
+          })
+        );
+
+  const displayedGroceryTotal =
+    useCachedKitchenData
+      ? cachedDashboard
+          .groceryProgressTotal
+      : liveGroceryProgressTotal;
+
+  const displayedGroceryPurchased =
+    useCachedKitchenData
+      ? cachedDashboard
+          .groceryProgressPurchased
+      : liveGroceryProgressPurchased;
+
+  const displayedMeals =
+    useCachedKitchenData
+      ? cachedDashboard.meals
+      : liveMeals;
+
+  /*
+   * Use cached Budget data while the cloud Budget
+   * request is loading or temporarily unavailable.
+   */
+  const useCachedBudgetData =
+    cachedDashboard !== null &&
+    (!isBudgetLoaded ||
+      Boolean(budgetLoadError));
+
+  const displayedMonthlyBudget =
+    useCachedBudgetData
+      ? cachedDashboard.monthlyBudget
+      : monthlyBudget;
+
+  const displayedMonthlySpent =
+    useCachedBudgetData
+      ? cachedDashboard.monthlySpent
+      : monthlySpent;
+
+  const displayedBudgetCurrency =
+    useCachedBudgetData
+      ? cachedDashboard.budgetCurrency
+      : budgetCurrency;
+
+  /*
+   * Save a fresh Dashboard cache once Kitchen
+   * and current-month Budget data have loaded.
+   */
+  useEffect(() => {
+    if (
+      !isKitchenLoaded ||
+      !isBudgetLoaded ||
+      budgetLoadError
+    ) {
+      return;
+    }
+
+    const dashboardCacheData: DashboardCacheData =
+      {
+        pantryItems:
+          totalPantryItems,
+
+        groceryRemaining:
+          liveGroceryProgressRemaining,
+
+        recipesSaved:
+          recipes.length,
+
+        mealsPlanned,
+
+        kitchenScore,
+
+        groceryProgressTotal:
+          liveGroceryProgressTotal,
+
+        groceryProgressPurchased:
+          liveGroceryProgressPurchased,
+
+        lowStockItems:
+          lowStockPantryItems.map(
+            (item) => ({
+              id: item.id,
+              name: item.name,
+              quantity:
+                item.quantity,
+              unit: item.unit,
+            })
+          ),
+
+        meals: liveMeals,
+
+        monthlyBudget,
+        monthlySpent,
+        budgetCurrency,
+      };
+
+    saveDashboardCache(
+      dashboardCacheData
+    );
+
+    setCachedDashboard(
+      dashboardCacheData
+    );
+  }, [
+    isKitchenLoaded,
+    isBudgetLoaded,
+    budgetLoadError,
+    pantry,
+    shopping,
+    planner,
+    recipes,
+    lastShoppingProgress,
+    monthlyBudget,
+    monthlySpent,
+    budgetCurrency,
+  ]);
+
   return (
     <AppLayout>
       <div className="space-y-6 lg:space-y-8">
         <KitchenSnapshot
           pantryItems={
-            totalPantryItems
+            displayedPantryItems
           }
           groceryRemaining={
-            groceryProgressRemaining
+            displayedGroceryRemaining
           }
           recipesSaved={
-            recipes.length
+            displayedRecipesSaved
           }
           mealsPlanned={
-            mealsPlanned
+            displayedMealsPlanned
           }
           kitchenScore={
-            kitchenScore
+            displayedKitchenScore
           }
         />
 
         <TodayMealsTimeline
-          meals={mealSlots.map(
+          meals={displayedMeals.map(
             (meal) => {
+              const matchedSlot =
+                mealSlots.find(
+                  (slot) =>
+                    slot.title ===
+                    meal.title
+                );
+
               const Icon =
-                meal.icon;
+                matchedSlot?.icon ??
+                KBIcons.meals.breakfast;
 
               return {
                 icon: (
@@ -454,59 +620,53 @@ export default function Home() {
                 ),
                 title: meal.title,
                 recipeName:
-                  getRecipeName(
-                    meal.recipeId
-                  ),
-                isPlanned: Boolean(
-                  meal.recipeId
-                ),
+                  meal.recipeName,
+                isPlanned:
+                  meal.isPlanned,
               };
             }
           )}
           plannedCount={
-            mealsPlanned
+            displayedMealsPlanned
           }
           totalCount={
-            mealSlots.length
+            displayedMeals.length
           }
         />
 
         <PantryAlerts
-          items={lowStockPantryItems.map(
-            (item) => ({
-              id: item.id,
-              name: item.name,
-              quantity:
-                item.quantity,
-              unit: item.unit,
-            })
-          )}
+          items={
+            displayedLowStockItems
+          }
         />
 
         <GroceryProgress
           totalItems={
-            groceryProgressTotal
+            displayedGroceryTotal
           }
           purchasedItems={
-            groceryProgressPurchased
+            displayedGroceryPurchased
           }
         />
 
         <BudgetOverview
           monthlyBudget={
-            monthlyBudget
+            displayedMonthlyBudget
           }
           monthlySpent={
-            monthlySpent
+            displayedMonthlySpent
           }
           currency={
-            budgetCurrency
+            displayedBudgetCurrency
           }
           isLoading={
-            !isBudgetLoaded
+            !isBudgetLoaded &&
+            !cachedDashboard
           }
           error={
-            budgetLoadError
+            cachedDashboard
+              ? ""
+              : budgetLoadError
           }
         />
 
