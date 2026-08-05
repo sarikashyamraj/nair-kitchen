@@ -190,15 +190,14 @@ export async function saveCloudTransaction(
   const { supabase, user } =
     await getAuthenticatedUser();
 
-  /*
-   * Shopping Sessions are not cloud-connected yet.
-   * Keep this null temporarily to avoid a foreign-key
-   * error from old Local Storage session IDs.
-   */
+  const transactionId =
+    transaction.id || crypto.randomUUID();
+
   const payload = {
-  user_id: user.id,
-  shopping_session_id:
-    transaction.shoppingSessionId || null,
+    id: transactionId,
+    user_id: user.id,
+    shopping_session_id:
+      transaction.shoppingSessionId || null,
     shopping_date: transaction.date,
     amount: transaction.amount,
     currency_code: transaction.currency,
@@ -212,77 +211,11 @@ export async function saveCloudTransaction(
     item_count: transaction.itemCount,
   };
 
-  const hasUuid =
-    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
-      transaction.id
-    );
-
-  let cloudTransactionExists = false;
-
-  if (hasUuid) {
-    const {
-      data: existingTransaction,
-      error: checkError,
-    } = await supabase
-      .from("grocery_transactions")
-      .select("id")
-      .eq("id", transaction.id)
-      .eq("user_id", user.id)
-      .maybeSingle();
-
-    if (checkError) {
-      throw new Error(
-        checkError.message
-      );
-    }
-
-    cloudTransactionExists = Boolean(
-      existingTransaction
-    );
-  }
-
-  if (cloudTransactionExists) {
-    const {
-      data: updatedTransaction,
-      error: updateError,
-    } = await supabase
-      .from("grocery_transactions")
-      .update(payload)
-      .eq("id", transaction.id)
-      .eq("user_id", user.id)
-      .select(
-        `
-          id,
-          user_id,
-          shopping_session_id,
-          shopping_date,
-          amount,
-          currency_code,
-          description,
-          store_name,
-          notes,
-          item_count
-        `
-      )
-      .single();
-
-    if (updateError) {
-      throw new Error(
-        updateError.message
-      );
-    }
-
-    return mapTransactionRow(
-      updatedTransaction as TransactionRow
-    );
-  }
-
-  const {
-    data: insertedTransaction,
-    error: insertError,
-  } = await supabase
+  const { data, error } = await supabase
     .from("grocery_transactions")
-    .insert(payload)
+    .upsert(payload, {
+      onConflict: "id",
+    })
     .select(
       `
         id,
@@ -299,14 +232,12 @@ export async function saveCloudTransaction(
     )
     .single();
 
-  if (insertError) {
-    throw new Error(
-      insertError.message
-    );
+  if (error) {
+    throw new Error(error.message);
   }
 
   return mapTransactionRow(
-    insertedTransaction as TransactionRow
+    data as TransactionRow
   );
 }
 

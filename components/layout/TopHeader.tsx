@@ -20,6 +20,68 @@ import { loadCloudProfile } from "../../services/profileService";
 import { loadPreferences } from "../../lib/preferencesStorage";
 import { formatDateByPreference } from "../../lib/dateFormatter";
 
+const PROFILE_CACHE_KEY =
+  "kitchen-brain-header-profile";
+
+type CachedProfile = {
+  profile: UserProfile;
+  cachedAt: string;
+};
+
+function loadCachedProfile(): UserProfile | null {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  const savedProfile =
+    localStorage.getItem(PROFILE_CACHE_KEY);
+
+  if (!savedProfile) {
+    return null;
+  }
+
+  try {
+    const parsedProfile =
+      JSON.parse(savedProfile) as CachedProfile;
+
+    if (
+      !parsedProfile.profile ||
+      typeof parsedProfile.profile.name !==
+        "string"
+    ) {
+      throw new Error(
+        "Invalid cached profile."
+      );
+    }
+
+    return parsedProfile.profile;
+  } catch {
+    localStorage.removeItem(
+      PROFILE_CACHE_KEY
+    );
+
+    return null;
+  }
+}
+
+function saveCachedProfile(
+  profile: UserProfile
+) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  const cachedProfile: CachedProfile = {
+    profile,
+    cachedAt: new Date().toISOString(),
+  };
+
+  localStorage.setItem(
+    PROFILE_CACHE_KEY,
+    JSON.stringify(cachedProfile)
+  );
+}
+
 export default function TopHeader() {
   const {
     pantry,
@@ -50,10 +112,31 @@ export default function TopHeader() {
   const notificationRef =
     useRef<HTMLDivElement | null>(null);
 
+  /*
+   * Display the cached profile immediately,
+   * then refresh it quietly from Supabase.
+   */
   useEffect(() => {
     let isMounted = true;
 
-    async function refreshProfile() {
+    const cachedProfile =
+      loadCachedProfile();
+
+    if (cachedProfile) {
+      setProfile(cachedProfile);
+      setIsProfileLoaded(true);
+    }
+
+    async function refreshProfile(
+      showLoadingState = false
+    ) {
+      if (
+        showLoadingState &&
+        !cachedProfile
+      ) {
+        setIsProfileLoaded(false);
+      }
+
       try {
         const cloudProfileResult =
           await loadCloudProfile();
@@ -65,13 +148,24 @@ export default function TopHeader() {
         setProfile(
           cloudProfileResult.profile
         );
+
+        saveCachedProfile(
+          cloudProfileResult.profile
+        );
       } catch (error) {
         console.error(
           "Unable to load profile in header:",
           error
         );
 
-        if (isMounted) {
+        /*
+         * Keep displaying cached data if the
+         * cloud refresh temporarily fails.
+         */
+        if (
+          isMounted &&
+          !cachedProfile
+        ) {
           setProfile(null);
         }
       } finally {
@@ -81,16 +175,45 @@ export default function TopHeader() {
       }
     }
 
-    void refreshProfile();
+    void refreshProfile(
+      !cachedProfile
+    );
 
     function handleProfileUpdated() {
-      setIsProfileLoaded(false);
-      void refreshProfile();
+      /*
+       * The Profile page has changed.
+       * Refresh without hiding the current name.
+       */
+      void refreshProfile(false);
+    }
+
+    function handleStorageChange(
+      event: StorageEvent
+    ) {
+      if (
+        event.key !==
+        PROFILE_CACHE_KEY
+      ) {
+        return;
+      }
+
+      const updatedProfile =
+        loadCachedProfile();
+
+      if (updatedProfile) {
+        setProfile(updatedProfile);
+        setIsProfileLoaded(true);
+      }
     }
 
     window.addEventListener(
       "profile-updated",
       handleProfileUpdated
+    );
+
+    window.addEventListener(
+      "storage",
+      handleStorageChange
     );
 
     return () => {
@@ -99,6 +222,11 @@ export default function TopHeader() {
       window.removeEventListener(
         "profile-updated",
         handleProfileUpdated
+      );
+
+      window.removeEventListener(
+        "storage",
+        handleStorageChange
       );
     };
   }, []);
@@ -188,7 +316,7 @@ export default function TopHeader() {
     pantry.filter(
       (item) =>
         item.quantity <=
-        item.minQuantity
+        (item.minQuantity ?? 0)
     );
 
   const pendingGroceryItems =
@@ -297,14 +425,20 @@ export default function TopHeader() {
   const notificationCount =
     notifications.length;
 
+  const displayName =
+    profile?.name?.trim() || "";
+
+  const displayRole =
+    profile?.role?.trim() ||
+    "Kitchen Manager";
+
   return (
     <header className="mb-6 rounded-2xl border border-[#F4E8D0] bg-white px-4 py-4 shadow-sm sm:px-6 sm:py-5 lg:mb-8 lg:px-8 lg:py-6">
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
           <h1 className="text-xl font-bold leading-tight text-[#2F6B3C] sm:text-3xl">
-            {isProfileLoaded &&
-            profile
-              ? `${greeting}, ${profile.name} 👋`
+            {displayName
+              ? `${greeting}, ${displayName} 👋`
               : `${greeting} 👋`}
           </h1>
 
@@ -326,9 +460,7 @@ export default function TopHeader() {
               }
               onClick={() =>
                 setIsNotificationsOpen(
-                  (
-                    currentValue
-                  ) =>
+                  (currentValue) =>
                     !currentValue
                 )
               }
@@ -339,9 +471,7 @@ export default function TopHeader() {
               {notificationCount >
                 0 && (
                 <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-[#D89B3C] px-1 text-[10px] font-bold text-white">
-                  {
-                    notificationCount
-                  }
+                  {notificationCount}
                 </span>
               )}
             </button>
@@ -378,9 +508,8 @@ export default function TopHeader() {
                     </p>
 
                     <p className="mt-1 text-sm text-gray-500">
-                      No enabled
-                      kitchen alerts
-                      right now.
+                      No enabled kitchen
+                      alerts right now.
                     </p>
                   </div>
                 ) : (
@@ -437,14 +566,15 @@ export default function TopHeader() {
             className="flex items-center gap-2 rounded-xl p-1 transition hover:bg-[#FFF8EC] sm:gap-3 sm:p-2"
           >
             <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-full border-2 border-[#D89B3C] bg-[#F4E8D0] shadow-sm sm:h-12 sm:w-12">
-              {!isProfileLoaded ? (
+              {!isProfileLoaded &&
+              !profile ? (
                 <div className="h-full w-full animate-pulse bg-[#EADCC4]" />
               ) : profile?.profileImage ? (
                 <Image
                   src={
                     profile.profileImage
                   }
-                  alt={`${profile.name} profile`}
+                  alt={`${displayName || "User"} profile`}
                   fill
                   sizes="48px"
                   className="object-cover"
@@ -452,8 +582,8 @@ export default function TopHeader() {
                 />
               ) : (
                 <div className="flex h-full w-full items-center justify-center font-bold text-[#2F6B3C]">
-                  {profile?.name
-                    ? profile.name
+                  {displayName
+                    ? displayName
                         .charAt(0)
                         .toUpperCase()
                     : "U"}
@@ -462,7 +592,8 @@ export default function TopHeader() {
             </div>
 
             <div className="hidden text-left lg:block">
-              {!isProfileLoaded ? (
+              {!isProfileLoaded &&
+              !profile ? (
                 <div className="space-y-2">
                   <div className="h-4 w-24 animate-pulse rounded bg-[#EADCC4]" />
 
@@ -471,13 +602,12 @@ export default function TopHeader() {
               ) : (
                 <>
                   <p className="font-semibold leading-tight text-[#5A4032]">
-                    {profile?.name ||
+                    {displayName ||
                       "User"}
                   </p>
 
                   <p className="mt-1 text-xs text-gray-500">
-                    {profile?.role ||
-                      "Kitchen Manager"}
+                    {displayRole}
                   </p>
                 </>
               )}

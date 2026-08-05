@@ -3,7 +3,6 @@
 import Sidebar from "./Sidebar";
 import MobileMenu from "./layout/MobileMenu";
 import TopHeader from "./layout/TopHeader";
-import AppLoader from "./common/AppLoader";
 
 import { useKitchen } from "../context/KitchenContext";
 
@@ -15,10 +14,6 @@ export default function AppLayout({
   children,
 }: AppLayoutProps) {
   const { isKitchenLoaded } = useKitchen();
-
-  if (!isKitchenLoaded) {
-    return <AppLoader />;
-  }
 
   return (
     <div className="min-h-screen bg-[#FFFDF8]">
@@ -33,6 +28,16 @@ export default function AppLayout({
               <MobileMenu />
               <TopHeader />
             </div>
+
+            {!isKitchenLoaded && (
+              <div className="mb-4 flex items-center gap-3 rounded-2xl border border-[#EADCC4] bg-white px-4 py-3 shadow-sm">
+                <div className="h-2.5 w-2.5 animate-pulse rounded-full bg-[#D89B3C]" />
+
+                <p className="text-sm font-medium text-[#5A4032]">
+                  Syncing your kitchen data...
+                </p>
+              </div>
+            )}
 
             {children}
           </div>

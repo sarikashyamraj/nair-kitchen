@@ -1,28 +1,30 @@
 "use client";
-import MealSummary from "../components/dashboard/MealSummary";
-import { KBIcons } from "../components/icons/KBIcons";
-import Link from "next/link";
+
 import { useEffect, useState } from "react";
 
 import AppLayout from "../components/AppLayout";
+import BudgetOverview from "../components/dashboard/BudgetOverview";
+import GroceryProgress from "../components/dashboard/GroceryProgress";
+import KitchenSnapshot from "../components/dashboard/KitchenSnapshot";
+import PantryAlerts from "../components/dashboard/PantryAlerts";
 import QuickActions from "../components/dashboard/QuickActions";
+import TodayMealsTimeline from "../components/dashboard/TodayMealsTimeline";
+import { KBIcons } from "../components/icons/KBIcons";
+
 import { useKitchen } from "../context/KitchenContext";
+import { loadPreferences } from "../lib/preferencesStorage";
+
 import {
   loadCloudBudgets,
   loadCloudTransactions,
 } from "../services/budgetService";
 
-import { loadPreferences } from "../lib/preferencesStorage";
-import KBStatCard, {
-  type KBStatCardAccent,
-} from "../components/dashboard/KBStatCard";
-import {
-  BookOpen,
-  Package,
-  ShoppingCart,
-  HeartPulse,
-  WalletCards,
-} from "lucide-react";
+type LastShoppingProgress = {
+  totalItems: number;
+  purchasedItems: number;
+  remainingItems: number;
+  completedAt: string;
+};
 
 function getMonthKey(date: Date) {
   return `${date.getFullYear()}-${String(
@@ -30,34 +32,55 @@ function getMonthKey(date: Date) {
   ).padStart(2, "0")}`;
 }
 
-function formatCurrency(
-  amount: number,
-  currency: string
-) {
-  return new Intl.NumberFormat("en-AE", {
-    style: "currency",
-    currency,
-    minimumFractionDigits: 2,
-  }).format(amount);
-}
 export default function Home() {
-  const { pantry, shopping, planner, recipes } = useKitchen();
+  const {
+    pantry,
+    shopping,
+    planner,
+    recipes,
+  } = useKitchen();
 
-  const [monthlyBudget, setMonthlyBudget] = useState(0);
-  const [monthlySpent, setMonthlySpent] = useState(0);
-  const [budgetCurrency, setBudgetCurrency] = useState("AED");
+  const [monthlyBudget, setMonthlyBudget] =
+    useState(0);
+
+  const [monthlySpent, setMonthlySpent] =
+    useState(0);
+
+  const [budgetCurrency, setBudgetCurrency] =
+    useState("AED");
+
   const [isBudgetLoaded, setIsBudgetLoaded] =
     useState(false);
 
   const [budgetLoadError, setBudgetLoadError] =
     useState("");
+
+  const [
+    lastShoppingProgress,
+    setLastShoppingProgress,
+  ] = useState<LastShoppingProgress | null>(
+    null
+  );
+
+  /*
+   * Load the current monthly budget
+   * and grocery transactions.
+   *
+   * This no longer blocks the entire Dashboard.
+   * Only BudgetOverview shows its loading state.
+   */
   useEffect(() => {
     let isMounted = true;
 
     async function refreshBudgetSummary() {
+      if (isMounted) {
+        setIsBudgetLoaded(false);
+      }
+
       try {
-        const currentMonth =
-          getMonthKey(new Date());
+        const currentMonth = getMonthKey(
+          new Date()
+        );
 
         const preferences =
           loadPreferences();
@@ -70,13 +93,14 @@ export default function Home() {
           loadCloudTransactions(),
         ]);
 
-        if (!isMounted) return;
+        if (!isMounted) {
+          return;
+        }
 
         const currentBudget =
           budgets.find(
             (budget) =>
-              budget.month ===
-              currentMonth
+              budget.month === currentMonth
           );
 
         const currentMonthSpent =
@@ -107,7 +131,9 @@ export default function Home() {
 
         setBudgetLoadError("");
       } catch (error) {
-        if (!isMounted) return;
+        if (!isMounted) {
+          return;
+        }
 
         setBudgetLoadError(
           error instanceof Error
@@ -155,353 +181,335 @@ export default function Home() {
       );
     };
   }, []);
-  if (!isBudgetLoaded) {
-    return (
-      <AppLayout>
-        <div className="flex min-h-[60vh] items-center justify-center">
-          <p className="font-semibold text-[#2F6B3C]">
-            Loading Dashboard...
-          </p>
-        </div>
-      </AppLayout>
-    );
-  }
 
-  if (budgetLoadError) {
-    return (
-      <AppLayout>
-        <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-red-700">
-          {budgetLoadError}
-        </div>
-      </AppLayout>
+  /*
+   * Load the progress from the most recently
+   * completed shopping session.
+   */
+  useEffect(() => {
+    function refreshShoppingProgress() {
+      const savedProgress =
+        localStorage.getItem(
+          "kitchen-brain-last-shopping-progress"
+        );
+
+      if (!savedProgress) {
+        setLastShoppingProgress(null);
+        return;
+      }
+
+      try {
+        const parsedProgress =
+          JSON.parse(
+            savedProgress
+          ) as LastShoppingProgress;
+
+        const isValidProgress =
+          typeof parsedProgress.totalItems ===
+            "number" &&
+          typeof parsedProgress.purchasedItems ===
+            "number" &&
+          typeof parsedProgress.remainingItems ===
+            "number" &&
+          typeof parsedProgress.completedAt ===
+            "string";
+
+        if (!isValidProgress) {
+          throw new Error(
+            "Invalid saved shopping progress."
+          );
+        }
+
+        setLastShoppingProgress(
+          parsedProgress
+        );
+      } catch {
+        localStorage.removeItem(
+          "kitchen-brain-last-shopping-progress"
+        );
+
+        setLastShoppingProgress(null);
+      }
+    }
+
+    refreshShoppingProgress();
+
+    window.addEventListener(
+      "grocery-updated",
+      refreshShoppingProgress
     );
-  }
-  const currentDay = new Date().toLocaleDateString("en-US", {
-    weekday: "long",
-  });
+
+    return () => {
+      window.removeEventListener(
+        "grocery-updated",
+        refreshShoppingProgress
+      );
+    };
+  }, []);
+
+  const currentDay =
+    new Date().toLocaleDateString(
+      "en-US",
+      {
+        weekday: "long",
+      }
+    );
 
   const todaysPlan = [...planner]
     .reverse()
-    .find((plan) => plan.day === currentDay);
+    .find(
+      (plan) =>
+        plan.day === currentDay
+    );
 
-  function getRecipeName(recipeId?: string) {
+  function getRecipeName(
+    recipeId?: string
+  ) {
     if (!recipeId) {
       return "Not planned";
     }
 
     const recipe = recipes.find(
-      (item) => item.id === recipeId
+      (item) =>
+        item.id === recipeId
     );
 
-    return recipe?.name || "Not planned";
+    return (
+      recipe?.name || "Not planned"
+    );
   }
 
-  const totalPantryItems = pantry.length;
+  /*
+   * Pantry information
+   */
+  const totalPantryItems =
+    pantry.length;
 
-  const lowStockItems = pantry.filter(
-    (item) => item.quantity <= item.minQuantity
-  ).length;
+  const lowStockPantryItems =
+    pantry.filter(
+      (item) =>
+        item.quantity <=
+        (item.minQuantity ?? 0)
+    );
+
+  const lowStockItems =
+    lowStockPantryItems.length;
 
   const pantryHealth =
     totalPantryItems === 0
       ? 0
       : Math.round(
-        ((totalPantryItems - lowStockItems) / totalPantryItems) * 100
-      );
+          ((totalPantryItems -
+            lowStockItems) /
+            totalPantryItems) *
+            100
+        );
 
-  const groceryRemaining = shopping.filter(
-    (item) => !item.purchased
-  ).length;
-  const budgetRemaining = monthlyBudget - monthlySpent;
+  /*
+   * Current grocery-list information
+   */
+  const groceryPurchased =
+    shopping.filter(
+      (item) => item.purchased
+    ).length;
 
-  const budgetUsedPercentage =
-    monthlyBudget > 0
-      ? Math.round(
-        (monthlySpent / monthlyBudget) * 100
-      )
-      : 0;
+  /*
+   * Use active grocery-list progress while
+   * the user is currently checking items.
+   *
+   * After purchased items are removed during
+   * Finish Shopping, use the saved session
+   * progress when its remaining count matches
+   * the current grocery list.
+   */
+  const shouldUseLastShoppingProgress =
+    groceryPurchased === 0 &&
+    lastShoppingProgress !== null &&
+    shopping.length ===
+      lastShoppingProgress.remainingItems;
 
-  const progressWidth = Math.min(
-    budgetUsedPercentage,
-    100
-  );
-  const stats: {
-    title: string;
-    value: string | number;
-    subtitle: string;
-    icon: typeof Package;
-    accent: KBStatCardAccent;
-  }[] = [
-      {
-        title: "Pantry Items",
-        value: totalPantryItems,
-        subtitle:
-          lowStockItems === 0
-            ? "Well stocked"
-            : `${lowStockItems} running low`,
-        icon: Package,
-        accent: "green",
-      },
-      {
-        title: "Recipes",
-        value: recipes.length,
-        subtitle: "Ready to cook",
-        icon: BookOpen,
-        accent: "gold",
-      },
-      {
-        title: "Grocery",
-        value: groceryRemaining,
-        subtitle:
-          groceryRemaining === 0
-            ? "Completed"
-            : "Items pending",
-        icon: ShoppingCart,
-        accent: "blue",
-      },
-      {
-        title: "Kitchen Health",
-        value: `${pantryHealth}%`,
-        subtitle:
-          pantryHealth >= 90
-            ? "Excellent"
-            : pantryHealth >= 70
-              ? "Good"
-              : pantryHealth >= 50
-                ? "Fair"
-                : "Needs attention",
-        icon: HeartPulse,
-        accent: "red",
-      },
-    ];
+  const groceryProgressTotal =
+    shouldUseLastShoppingProgress
+      ? lastShoppingProgress.totalItems
+      : shopping.length;
 
+  const groceryProgressPurchased =
+    shouldUseLastShoppingProgress
+      ? lastShoppingProgress.purchasedItems
+      : groceryPurchased;
+
+  const groceryProgressRemaining =
+    Math.max(
+      groceryProgressTotal -
+        groceryProgressPurchased,
+      0
+    );
+
+  /*
+   * Today's meal information
+   */
   const mealSlots = [
     {
-      icon: KBIcons.meals.morningDrink,
+      icon:
+        KBIcons.meals.morningDrink,
       title: "Morning Drink",
-      recipeId: todaysPlan?.morningDrink,
+      recipeId:
+        todaysPlan?.morningDrink,
     },
     {
-      icon: KBIcons.meals.breakfast,
+      icon:
+        KBIcons.meals.breakfast,
       title: "Breakfast",
-      recipeId: todaysPlan?.breakfast,
+      recipeId:
+        todaysPlan?.breakfast,
     },
     {
-      icon: KBIcons.meals.lunch,
+      icon:
+        KBIcons.meals.lunch,
       title: "Lunch",
-      recipeId: todaysPlan?.lunch,
+      recipeId:
+        todaysPlan?.lunch,
     },
     {
-      icon: KBIcons.meals.snack,
+      icon:
+        KBIcons.meals.snack,
       title: "Snack",
-      recipeId: todaysPlan?.snack,
+      recipeId:
+        todaysPlan?.snack,
     },
     {
-      icon: KBIcons.meals.dinner,
+      icon:
+        KBIcons.meals.dinner,
       title: "Dinner",
-      recipeId: todaysPlan?.dinner,
+      recipeId:
+        todaysPlan?.dinner,
     },
   ];
+
+  const mealsPlanned =
+    mealSlots.filter((meal) =>
+      Boolean(meal.recipeId)
+    ).length;
+
+  /*
+   * Kitchen score
+   */
+  const groceryCompletion =
+    groceryProgressTotal === 0
+      ? 100
+      : Math.round(
+          (groceryProgressPurchased /
+            groceryProgressTotal) *
+            100
+        );
+
+  const plannerCompletion =
+    mealSlots.length === 0
+      ? 0
+      : Math.round(
+          (mealsPlanned /
+            mealSlots.length) *
+            100
+        );
+
+  const kitchenScore = Math.round(
+    pantryHealth * 0.5 +
+      groceryCompletion * 0.25 +
+      plannerCompletion * 0.25
+  );
+
   return (
     <AppLayout>
       <div className="space-y-6 lg:space-y-8">
-        {/* Dashboard Statistics */}
-        <section className="grid grid-cols-2 gap-3 sm:gap-5 md:grid-cols-4">
-          {stats.map((stat) => (
-            <KBStatCard
-              key={stat.title}
-              icon={stat.icon}
-              title={stat.title}
-              value={stat.value}
-              subtitle={stat.subtitle}
-              accent={stat.accent}
-            />
-          ))}
-        </section>
+        <KitchenSnapshot
+          pantryItems={
+            totalPantryItems
+          }
+          groceryRemaining={
+            groceryProgressRemaining
+          }
+          recipesSaved={
+            recipes.length
+          }
+          mealsPlanned={
+            mealsPlanned
+          }
+          kitchenScore={
+            kitchenScore
+          }
+        />
 
+        <TodayMealsTimeline
+          meals={mealSlots.map(
+            (meal) => {
+              const Icon =
+                meal.icon;
 
-
-        {/* Meal Plan and Pantry Health */}
-        <section className="grid gap-5 lg:grid-cols-3 lg:gap-6">
-          {/* Today's Meal Plan */}
-          <div className="rounded-2xl border border-[#EADCC4] bg-white p-4 shadow-sm sm:p-6 lg:col-span-2">
-            <h2 className="text-xl font-bold text-[#2F6B3C] sm:text-2xl">
-              Today&apos;s Meal Plan
-            </h2>
-
-            <div className="mt-4 grid gap-3 sm:mt-5 md:grid-cols-2 md:gap-4">
-              {mealSlots.map((meal) => (
-                <MealSummary
-                  key={meal.title}
-                  icon={meal.icon}
-                  title={meal.title}
-                  recipeName={getRecipeName(meal.recipeId)}
-                />
-              ))}
-            </div>
-          </div>
-
-          {/* Pantry Health */}
-          <div className="rounded-2xl border border-[#EADCC4] bg-white p-4 shadow-sm sm:p-6">
-            <h2 className="text-xl font-bold text-[#2F6B3C] sm:text-2xl">
-              Pantry Health
-            </h2>
-
-            <p className="mt-4 text-4xl font-bold text-[#5A4032] sm:mt-5 sm:text-5xl">
-              {pantryHealth}%
-            </p>
-
-            <div className="mt-4 h-3 w-full rounded-full bg-[#F4E8D0] sm:mt-5 sm:h-4">
-              <div
-                className="h-full rounded-full bg-[#2F6B3C]"
-                style={{ width: `${pantryHealth}%` }}
-              />
-            </div>
-
-            <p className="mt-3 text-sm text-gray-500 sm:mt-4 sm:text-base">
-              {lowStockItems === 0
-                ? "Everything looks well stocked."
-                : `${lowStockItems} item(s) are running low.`}
-            </p>
-          </div>
-        </section>
-
-        {/* Monthly Budget */}
-        <section className="rounded-2xl border border-[#EADCC4] bg-white p-4 shadow-sm sm:p-6">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex items-start gap-3">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-purple-100 text-purple-700">
-                <WalletCards size={22} />
-              </div>
-
-              <div>
-                <h2 className="text-xl font-bold text-[#2F6B3C] sm:text-2xl">
-                  Monthly Grocery Budget
-                </h2>
-
-                <p className="mt-1 text-sm text-gray-500">
-                  Current month spending overview
-                </p>
-              </div>
-            </div>
-
-            <Link
-              href="/budget"
-              className="shrink-0 rounded-xl border border-[#EADCC4] bg-[#FFF8EC] px-3 py-2 text-sm font-semibold text-[#5A4032] transition hover:bg-[#F4E8D0]"
-            >
-              View Budget
-            </Link>
-          </div>
-
-          {monthlyBudget === 0 ? (
-            <div className="mt-5 rounded-xl border border-dashed border-[#EADCC4] bg-[#FFFCF8] p-5 text-center">
-              <p className="font-semibold text-[#2F6B3C]">
-                No monthly budget set
-              </p>
-
-              <p className="mt-1 text-sm text-gray-500">
-                Set a grocery budget to start tracking your monthly spending.
-              </p>
-
-              <Link
-                href="/budget"
-                className="mt-4 inline-flex rounded-xl bg-[#2F6B3C] px-4 py-2 text-sm font-semibold text-white"
-              >
-                Set Budget
-              </Link>
-            </div>
-          ) : (
-            <>
-              <div className="mt-5 grid grid-cols-2 gap-3 md:grid-cols-3">
-                <div className="rounded-xl bg-[#FFF8EC] p-4">
-                  <p className="text-xs text-gray-500">
-                    Budget
-                  </p>
-
-                  <p className="mt-1 text-lg font-bold text-[#5A4032]">
-                    {formatCurrency(
-                      monthlyBudget,
-                      budgetCurrency
-                    )}
-                  </p>
-                </div>
-
-                <div className="rounded-xl bg-blue-50 p-4">
-                  <p className="text-xs text-gray-500">
-                    Spent
-                  </p>
-
-                  <p className="mt-1 text-lg font-bold text-blue-700">
-                    {formatCurrency(
-                      monthlySpent,
-                      budgetCurrency
-                    )}
-                  </p>
-                </div>
-
-                <div className="col-span-2 rounded-xl bg-green-50 p-4 md:col-span-1">
-                  <p className="text-xs text-gray-500">
-                    {budgetRemaining < 0
-                      ? "Over Budget"
-                      : "Remaining"}
-                  </p>
-
-                  <p
-                    className={`mt-1 text-lg font-bold ${budgetRemaining < 0
-                      ? "text-red-600"
-                      : "text-green-700"
-                      }`}
-                  >
-                    {formatCurrency(
-                      Math.abs(budgetRemaining),
-                      budgetCurrency
-                    )}
-                  </p>
-                </div>
-              </div>
-
-              <div className="mt-5">
-                <div className="flex items-center justify-between gap-3">
-                  <p className="text-sm font-medium text-[#5A4032]">
-                    Budget used
-                  </p>
-
-                  <p className="text-sm font-bold text-[#2F6B3C]">
-                    {budgetUsedPercentage}%
-                  </p>
-                </div>
-
-                <div className="mt-2 h-3 w-full overflow-hidden rounded-full bg-[#F4E8D0]">
-                  <div
-                    className={`h-full rounded-full transition-all ${budgetRemaining < 0
-                      ? "bg-red-500"
-                      : budgetUsedPercentage >= 80
-                        ? "bg-yellow-500"
-                        : "bg-[#2F6B3C]"
-                      }`}
-                    style={{
-                      width: `${progressWidth}%`,
-                    }}
+              return {
+                icon: (
+                  <Icon
+                    size={20}
+                    strokeWidth={2.1}
                   />
-                </div>
-
-                <p className="mt-3 text-sm text-gray-500">
-                  {budgetRemaining < 0
-                    ? `You have exceeded this month’s budget by ${formatCurrency(
-                      Math.abs(budgetRemaining),
-                      budgetCurrency
-                    )}.`
-                    : `${formatCurrency(
-                      budgetRemaining,
-                      budgetCurrency
-                    )} is still available this month.`}
-                </p>
-              </div>
-            </>
+                ),
+                title: meal.title,
+                recipeName:
+                  getRecipeName(
+                    meal.recipeId
+                  ),
+                isPlanned: Boolean(
+                  meal.recipeId
+                ),
+              };
+            }
           )}
-        </section>
+          plannedCount={
+            mealsPlanned
+          }
+          totalCount={
+            mealSlots.length
+          }
+        />
 
-        {/* Quick Actions */}
+        <PantryAlerts
+          items={lowStockPantryItems.map(
+            (item) => ({
+              id: item.id,
+              name: item.name,
+              quantity:
+                item.quantity,
+              unit: item.unit,
+            })
+          )}
+        />
+
+        <GroceryProgress
+          totalItems={
+            groceryProgressTotal
+          }
+          purchasedItems={
+            groceryProgressPurchased
+          }
+        />
+
+        <BudgetOverview
+          monthlyBudget={
+            monthlyBudget
+          }
+          monthlySpent={
+            monthlySpent
+          }
+          currency={
+            budgetCurrency
+          }
+          isLoading={
+            !isBudgetLoaded
+          }
+          error={
+            budgetLoadError
+          }
+        />
+
         <QuickActions />
       </div>
     </AppLayout>

@@ -66,7 +66,8 @@ const { showToast: showAppToast } = useToast();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isCheckoutOpen, setIsCheckoutOpen] =
     useState(false);
-
+const [isCompletingShopping, setIsCompletingShopping] =
+  useState(false);
   const [editingItem, setEditingItem] =
     useState<ShoppingItem | null>(null);
 
@@ -182,6 +183,30 @@ setShopping(cloudGrocery);
   async function handleCompleteShopping(
   data: CheckoutData
 ) {
+  if (isCompletingShopping) {
+    return;
+  }
+
+  const purchasedSnapshot = shopping.filter(
+    (item) => item.purchased
+  );
+
+  const remainingSnapshot = shopping.filter(
+    (item) => !item.purchased
+  );
+
+  if (purchasedSnapshot.length === 0) {
+    showAppToast({
+      type: "error",
+      message:
+        "Please mark at least one item as purchased.",
+    });
+
+    return;
+  }
+
+  setIsCompletingShopping(true);
+
   try {
     const result =
       updatePantryFromPurchasedItems(
@@ -189,34 +214,31 @@ setShopping(cloudGrocery);
         shopping
       );
 
-    const savedPantry =
-      await Promise.all(
-        result.updatedPantry.map(
-          (item) =>
-            saveCloudPantryItem(item)
-        )
-      );
-
-    await deleteCloudGroceryItems(
-      purchasedItems.map(
-        (item) => item.id
+    const savedPantry = await Promise.all(
+      result.updatedPantry.map((item) =>
+        saveCloudPantryItem(item)
       )
     );
 
+    await deleteCloudGroceryItems(
+      purchasedSnapshot.map((item) => item.id)
+    );
+
+    const sessionId = crypto.randomUUID();
+
     const shoppingSessionToSave: ShoppingSession = {
-      id: crypto.randomUUID(),
+      id: sessionId,
       date: data.date,
       store: data.store,
       amount: data.amount,
       currency,
       notes: data.notes,
-      purchasedItems,
+      purchasedItems: purchasedSnapshot,
       purchasedItemCount:
-        purchasedItems.length,
+        purchasedSnapshot.length,
       remainingItemCount:
-        notPurchasedItems.length,
-      completedAt:
-        new Date().toISOString(),
+        remainingSnapshot.length,
+      completedAt: new Date().toISOString(),
     };
 
     const savedShoppingSession =
@@ -224,21 +246,24 @@ setShopping(cloudGrocery);
         shoppingSessionToSave
       );
 
-    const groceryTransactionToSave: GroceryTransaction = {
-      id: crypto.randomUUID(),
-      shoppingSessionId:
-        savedShoppingSession.id,
-      date: data.date,
-      amount: data.amount,
-      currency,
-      description:
-        data.notes ||
-        "Grocery Shopping",
-      store: data.store,
-      notes: data.notes,
-      itemCount:
-        purchasedItems.length,
-    };
+    const transactionId =
+      crypto.randomUUID();
+
+    const groceryTransactionToSave: GroceryTransaction =
+      {
+        id: transactionId,
+        shoppingSessionId:
+          savedShoppingSession.id,
+        date: data.date,
+        amount: data.amount,
+        currency,
+        description:
+          data.notes || "Grocery Shopping",
+        store: data.store,
+        notes: data.notes,
+        itemCount:
+          purchasedSnapshot.length,
+      };
 
     await saveCloudTransaction(
       groceryTransactionToSave
@@ -249,15 +274,30 @@ setShopping(cloudGrocery);
       data.store
     );
 
+    localStorage.setItem(
+      "kitchen-brain-last-shopping-progress",
+      JSON.stringify({
+        totalItems: shopping.length,
+        purchasedItems:
+          purchasedSnapshot.length,
+        remainingItems:
+          remainingSnapshot.length,
+        completedAt:
+          new Date().toISOString(),
+      })
+    );
+
     setLastStore(data.store);
     setPantry(savedPantry);
-    setShopping(
-      result.remainingShopping
-    );
+    setShopping(result.remainingShopping);
     setIsCheckoutOpen(false);
 
     window.dispatchEvent(
       new Event("budget-updated")
+    );
+
+    window.dispatchEvent(
+      new Event("grocery-updated")
     );
 
     showToast(
@@ -273,17 +313,11 @@ setShopping(cloudGrocery);
           ? error.message
           : "Unable to complete shopping.",
     });
-  }
-}
 
-if (loadError) {
-  return (
-    <AppLayout>
-      <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-red-700">
-        {loadError}
-      </div>
-    </AppLayout>
-  );
+    throw error;
+  } finally {
+    setIsCompletingShopping(false);
+  }
 }
   return (
     <AppLayout>
@@ -355,14 +389,19 @@ if (loadError) {
       </div>
 
       <CheckoutSheet
-        isOpen={isCheckoutOpen}
-        onClose={() => setIsCheckoutOpen(false)}
-        currency={currency}
-        purchasedCount={purchasedItems.length}
-        remainingCount={notPurchasedItems.length}
-        initialStore={lastStore}
-        onComplete={handleCompleteShopping}
-      />
+  isOpen={isCheckoutOpen}
+  onClose={() => {
+    if (!isCompletingShopping) {
+      setIsCheckoutOpen(false);
+    }
+  }}
+  currency={currency}
+  purchasedCount={purchasedItems.length}
+  remainingCount={notPurchasedItems.length}
+  initialStore={lastStore}
+  isCompleting={isCompletingShopping}
+  onComplete={handleCompleteShopping}
+/>
 
       {toastMessage && (
         <Toast message={toastMessage} />

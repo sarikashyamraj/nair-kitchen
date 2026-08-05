@@ -30,7 +30,8 @@ type CheckoutSheetProps = {
   purchasedCount: number;
   remainingCount: number;
   initialStore?: string;
-  onComplete: (data: CheckoutData) => void;
+  isCompleting?: boolean;
+  onComplete: (data: CheckoutData) => Promise<void>;
 };
 
 const ADD_CUSTOM_STORE = "__add_custom_store__";
@@ -46,24 +47,38 @@ export default function CheckoutSheet({
   purchasedCount,
   remainingCount,
   initialStore = "",
+  isCompleting = false,
   onComplete,
 }: CheckoutSheetProps) {
-  const [shoppingDate, setShoppingDate] = useState(getTodayDate());
-  const [country, setCountry] = useState("United Arab Emirates");
+  const [shoppingDate, setShoppingDate] = useState(
+    getTodayDate()
+  );
+
+  const [country, setCountry] = useState(
+    "United Arab Emirates"
+  );
 
   const [store, setStore] = useState("");
   const [customStore, setCustomStore] = useState("");
-  const [isCustomStoreOpen, setIsCustomStoreOpen] = useState(false);
+  const [isCustomStoreOpen, setIsCustomStoreOpen] =
+    useState(false);
 
-  const [recentStores, setRecentStores] = useState<string[]>([]);
-  const [customStores, setCustomStores] = useState<string[]>([]);
+  const [recentStores, setRecentStores] = useState<
+    string[]
+  >([]);
+
+  const [customStores, setCustomStores] = useState<
+    string[]
+  >([]);
 
   const [billAmount, setBillAmount] = useState("");
   const [notes, setNotes] = useState("Weekly Grocery");
   const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen) {
+      return;
+    }
 
     const preferences = loadPreferences();
     const savedLastStore = loadLastStore();
@@ -85,10 +100,8 @@ export default function CheckoutSheet({
     setRecentStores(savedRecentStores);
     setCustomStores(savedCustomStores);
     setStore(defaultStore);
-
     setCustomStore("");
     setIsCustomStoreOpen(false);
-
     setBillAmount("");
     setNotes("Weekly Grocery");
     setErrorMessage("");
@@ -110,6 +123,10 @@ export default function CheckoutSheet({
   );
 
   function handleStoreChange(value: string) {
+    if (isCompleting) {
+      return;
+    }
+
     if (value === ADD_CUSTOM_STORE) {
       setIsCustomStoreOpen(true);
       setCustomStore("");
@@ -124,6 +141,10 @@ export default function CheckoutSheet({
   }
 
   function handleAddCustomStore() {
+    if (isCompleting) {
+      return;
+    }
+
     const cleanedStore = customStore.trim();
 
     if (!cleanedStore) {
@@ -142,8 +163,13 @@ export default function CheckoutSheet({
     setErrorMessage("");
   }
 
-  function handleComplete() {
+  async function handleComplete() {
+    if (isCompleting) {
+      return;
+    }
+
     const amount = Number(billAmount);
+
     const selectedStore = isCustomStoreOpen
       ? customStore.trim()
       : store.trim();
@@ -167,34 +193,46 @@ export default function CheckoutSheet({
       return;
     }
 
-    if (!amount || amount <= 0) {
+    if (
+      !Number.isFinite(amount) ||
+      amount <= 0
+    ) {
       setErrorMessage(
         "Please enter a valid bill amount."
       );
       return;
     }
 
-    if (isCustomStoreOpen) {
-      saveCustomStore(selectedStore);
-    } else {
-      saveRecentStore(selectedStore);
-    }
-
     setErrorMessage("");
 
-    onComplete({
-      date: shoppingDate,
-      store: selectedStore,
-      amount,
-      notes: notes.trim() || "Grocery Shopping",
-    });
+    try {
+      if (isCustomStoreOpen) {
+        saveCustomStore(selectedStore);
+      } else {
+        saveRecentStore(selectedStore);
+      }
+
+      await onComplete({
+        date: shoppingDate,
+        store: selectedStore,
+        amount,
+        notes:
+          notes.trim() || "Grocery Shopping",
+      });
+    } catch {
+      // The parent displays the application toast.
+    }
   }
 
   return (
     <BottomSheet
       isOpen={isOpen}
       title="Shopping Summary"
-      onClose={onClose}
+      onClose={() => {
+        if (!isCompleting) {
+          onClose();
+        }
+      }}
     >
       <div className="space-y-5">
         <div className="grid grid-cols-2 gap-3">
@@ -227,10 +265,11 @@ export default function CheckoutSheet({
           <input
             type="date"
             value={shoppingDate}
+            disabled={isCompleting}
             onChange={(event) =>
               setShoppingDate(event.target.value)
             }
-            className="w-full rounded-xl border border-[#EADCC4] bg-white px-4 py-3 outline-none focus:border-[#2F6B3C]"
+            className="w-full rounded-xl border border-[#EADCC4] bg-white px-4 py-3 outline-none focus:border-[#2F6B3C] disabled:cursor-not-allowed disabled:opacity-60"
           />
         </div>
 
@@ -249,15 +288,14 @@ export default function CheckoutSheet({
                 ? ADD_CUSTOM_STORE
                 : store
             }
+            disabled={isCompleting}
             onChange={(event) =>
               handleStoreChange(event.target.value)
             }
-            className="w-full rounded-xl border border-[#EADCC4] bg-white px-4 py-3 outline-none focus:border-[#2F6B3C]"
+            className="w-full rounded-xl border border-[#EADCC4] bg-white px-4 py-3 outline-none focus:border-[#2F6B3C] disabled:cursor-not-allowed disabled:opacity-60"
           >
             {!store && (
-              <option value="">
-                Select store
-              </option>
+              <option value="">Select store</option>
             )}
 
             {recentStores.length > 0 && (
@@ -286,7 +324,9 @@ export default function CheckoutSheet({
               </optgroup>
             )}
 
-            <optgroup label={`Suggested in ${country}`}>
+            <optgroup
+              label={`Suggested in ${country}`}
+            >
               {regionalStores.map((storeName) => (
                 <option
                   key={`regional-${storeName}`}
@@ -312,17 +352,21 @@ export default function CheckoutSheet({
                 <input
                   type="text"
                   value={customStore}
+                  disabled={isCompleting}
                   onChange={(event) =>
-                    setCustomStore(event.target.value)
+                    setCustomStore(
+                      event.target.value
+                    )
                   }
                   placeholder="Enter store name"
-                  className="min-w-0 flex-1 rounded-xl border border-[#EADCC4] bg-white px-4 py-3 outline-none focus:border-[#2F6B3C]"
+                  className="min-w-0 flex-1 rounded-xl border border-[#EADCC4] bg-white px-4 py-3 outline-none focus:border-[#2F6B3C] disabled:cursor-not-allowed disabled:opacity-60"
                 />
 
                 <button
                   type="button"
+                  disabled={isCompleting}
                   onClick={handleAddCustomStore}
-                  className="rounded-xl bg-[#2F6B3C] px-4 py-3 font-semibold text-white"
+                  className="rounded-xl bg-[#2F6B3C] px-4 py-3 font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   Add Store
                 </button>
@@ -346,11 +390,12 @@ export default function CheckoutSheet({
               min="0"
               step="0.01"
               value={billAmount}
+              disabled={isCompleting}
               onChange={(event) =>
                 setBillAmount(event.target.value)
               }
               placeholder="0.00"
-              className="min-w-0 flex-1 px-4 py-3 outline-none"
+              className="min-w-0 flex-1 px-4 py-3 outline-none disabled:cursor-not-allowed disabled:opacity-60"
             />
           </div>
         </div>
@@ -363,11 +408,12 @@ export default function CheckoutSheet({
           <textarea
             rows={3}
             value={notes}
+            disabled={isCompleting}
             onChange={(event) =>
               setNotes(event.target.value)
             }
             placeholder="Weekly grocery, monthly stock-up..."
-            className="w-full rounded-xl border border-[#EADCC4] px-4 py-3 outline-none focus:border-[#2F6B3C]"
+            className="w-full rounded-xl border border-[#EADCC4] px-4 py-3 outline-none focus:border-[#2F6B3C] disabled:cursor-not-allowed disabled:opacity-60"
           />
         </div>
 
@@ -380,18 +426,22 @@ export default function CheckoutSheet({
         <div className="flex gap-3 border-t border-[#F4E8D0] pt-4">
           <button
             type="button"
+            disabled={isCompleting}
             onClick={onClose}
-            className="min-h-12 flex-1 rounded-xl border border-[#EADCC4] bg-white px-4 font-semibold text-[#5A4032]"
+            className="min-h-12 flex-1 rounded-xl border border-[#EADCC4] bg-white px-4 font-semibold text-[#5A4032] disabled:cursor-not-allowed disabled:opacity-60"
           >
             Cancel
           </button>
 
           <button
             type="button"
-            onClick={handleComplete}
-            className="min-h-12 flex-1 rounded-xl bg-[#2F6B3C] px-4 font-semibold text-white"
+            disabled={isCompleting}
+            onClick={() => void handleComplete()}
+            className="min-h-12 flex-1 rounded-xl bg-[#2F6B3C] px-4 font-semibold text-white disabled:cursor-not-allowed disabled:opacity-70"
           >
-            Complete
+            {isCompleting
+              ? "Completing..."
+              : "Complete"}
           </button>
         </div>
       </div>
