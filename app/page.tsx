@@ -8,10 +8,12 @@ import {
 import AppLayout from "../components/AppLayout";
 import BudgetOverview from "../components/dashboard/BudgetOverview";
 import GroceryProgress from "../components/dashboard/GroceryProgress";
+import KitchenIntelligence from "../components/dashboard/KitchenIntelligence";
 import KitchenSnapshot from "../components/dashboard/KitchenSnapshot";
 import PantryAlerts from "../components/dashboard/PantryAlerts";
 import QuickActions from "../components/dashboard/QuickActions";
 import TodayMealsTimeline from "../components/dashboard/TodayMealsTimeline";
+
 import { KBIcons } from "../components/icons/KBIcons";
 
 import { useKitchen } from "../context/KitchenContext";
@@ -201,13 +203,13 @@ export default function Home() {
 
         const isValidProgress =
           typeof parsedProgress.totalItems ===
-            "number" &&
+          "number" &&
           typeof parsedProgress.purchasedItems ===
-            "number" &&
+          "number" &&
           typeof parsedProgress.remainingItems ===
-            "number" &&
+          "number" &&
           typeof parsedProgress.completedAt ===
-            "string";
+          "string";
 
         if (!isValidProgress) {
           throw new Error(
@@ -294,11 +296,11 @@ export default function Home() {
     totalPantryItems === 0
       ? 0
       : Math.round(
-          ((totalPantryItems -
-            lowStockItems) /
-            totalPantryItems) *
-            100
-        );
+        ((totalPantryItems -
+          lowStockItems) /
+          totalPantryItems) *
+        100
+      );
 
   /*
    * Live Grocery information
@@ -312,7 +314,7 @@ export default function Home() {
     groceryPurchased === 0 &&
     lastShoppingProgress !== null &&
     shopping.length ===
-      lastShoppingProgress.remainingItems;
+    lastShoppingProgress.remainingItems;
 
   const liveGroceryProgressTotal =
     shouldUseLastShoppingProgress
@@ -327,7 +329,7 @@ export default function Home() {
   const liveGroceryProgressRemaining =
     Math.max(
       liveGroceryProgressTotal -
-        liveGroceryProgressPurchased,
+      liveGroceryProgressPurchased,
       0
     );
 
@@ -396,24 +398,24 @@ export default function Home() {
     liveGroceryProgressTotal === 0
       ? 100
       : Math.round(
-          (liveGroceryProgressPurchased /
-            liveGroceryProgressTotal) *
-            100
-        );
+        (liveGroceryProgressPurchased /
+          liveGroceryProgressTotal) *
+        100
+      );
 
   const plannerCompletion =
     mealSlots.length === 0
       ? 0
       : Math.round(
-          (mealsPlanned /
-            mealSlots.length) *
-            100
-        );
+        (mealsPlanned /
+          mealSlots.length) *
+        100
+      );
 
   const kitchenScore = Math.round(
     pantryHealth * 0.5 +
-      groceryCompletion * 0.25 +
-      plannerCompletion * 0.25
+    groceryCompletion * 0.25 +
+    plannerCompletion * 0.25
   );
 
   /*
@@ -453,25 +455,25 @@ export default function Home() {
     useCachedKitchenData
       ? cachedDashboard.lowStockItems
       : lowStockPantryItems.map(
-          (item) => ({
-            id: item.id,
-            name: item.name,
-            quantity:
-              item.quantity,
-            unit: item.unit,
-          })
-        );
+        (item) => ({
+          id: item.id,
+          name: item.name,
+          quantity:
+            item.quantity,
+          unit: item.unit,
+        })
+      );
 
   const displayedGroceryTotal =
     useCachedKitchenData
       ? cachedDashboard
-          .groceryProgressTotal
+        .groceryProgressTotal
       : liveGroceryProgressTotal;
 
   const displayedGroceryPurchased =
     useCachedKitchenData
       ? cachedDashboard
-          .groceryProgressPurchased
+        .groceryProgressPurchased
       : liveGroceryProgressPurchased;
 
   const displayedMeals =
@@ -517,43 +519,43 @@ export default function Home() {
     }
 
     const dashboardCacheData: DashboardCacheData =
-      {
-        pantryItems:
-          totalPantryItems,
+    {
+      pantryItems:
+        totalPantryItems,
 
-        groceryRemaining:
-          liveGroceryProgressRemaining,
+      groceryRemaining:
+        liveGroceryProgressRemaining,
 
-        recipesSaved:
-          recipes.length,
+      recipesSaved:
+        recipes.length,
 
-        mealsPlanned,
+      mealsPlanned,
 
-        kitchenScore,
+      kitchenScore,
 
-        groceryProgressTotal:
-          liveGroceryProgressTotal,
+      groceryProgressTotal:
+        liveGroceryProgressTotal,
 
-        groceryProgressPurchased:
-          liveGroceryProgressPurchased,
+      groceryProgressPurchased:
+        liveGroceryProgressPurchased,
 
-        lowStockItems:
-          lowStockPantryItems.map(
-            (item) => ({
-              id: item.id,
-              name: item.name,
-              quantity:
-                item.quantity,
-              unit: item.unit,
-            })
-          ),
+      lowStockItems:
+        lowStockPantryItems.map(
+          (item) => ({
+            id: item.id,
+            name: item.name,
+            quantity:
+              item.quantity,
+            unit: item.unit,
+          })
+        ),
 
-        meals: liveMeals,
+      meals: liveMeals,
 
-        monthlyBudget,
-        monthlySpent,
-        budgetCurrency,
-      };
+      monthlyBudget,
+      monthlySpent,
+      budgetCurrency,
+    };
 
     saveDashboardCache(
       dashboardCacheData
@@ -596,7 +598,11 @@ export default function Home() {
             displayedKitchenScore
           }
         />
-
+        <KitchenIntelligence
+          monthlyBudget={displayedMonthlyBudget}
+          monthlySpent={displayedMonthlySpent}
+          currency={displayedBudgetCurrency}
+        />
         <TodayMealsTimeline
           meals={displayedMeals.map(
             (meal) => {
