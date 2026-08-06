@@ -4,6 +4,7 @@ import {
   createContext,
   useContext,
   useEffect,
+  useRef,
   useState,
 } from "react";
 
@@ -41,6 +42,8 @@ type KitchenContextType = {
   >;
 
   isKitchenLoaded: boolean;
+  isKitchenRefreshing: boolean;
+  refreshKitchen: () => Promise<void>;
 };
 
 const KitchenContext =
@@ -70,139 +73,219 @@ export function KitchenProvider({
     setIsKitchenLoaded,
   ] = useState(false);
 
-  useEffect(() => {
-    const supabase = createClient();
+  const [
+    isKitchenRefreshing,
+    setIsKitchenRefreshing,
+  ] = useState(false);
 
-    let isMounted = true;
-    let latestLoadRequest = 0;
+  const isMountedRef =
+    useRef(true);
 
-    function clearKitchenData() {
-      setPantry([]);
-      setRecipes([]);
-      setShopping([]);
-      setPlanner([]);
+  const latestLoadRequestRef =
+    useRef(0);
+
+  const hasCompletedInitialLoadRef =
+    useRef(false);
+
+  function clearKitchenData() {
+    setPantry([]);
+    setRecipes([]);
+    setShopping([]);
+    setPlanner([]);
+  }
+
+  async function loadKitchenData(
+    options?: {
+      forceInitialLoader?: boolean;
+    }
+  ) {
+    const currentRequest =
+      ++latestLoadRequestRef.current;
+
+    const shouldShowInitialLoader =
+      options?.forceInitialLoader === true ||
+      !hasCompletedInitialLoadRef.current;
+
+    if (
+      isMountedRef.current &&
+      shouldShowInitialLoader
+    ) {
+      setIsKitchenLoaded(false);
     }
 
-    async function loadKitchenData() {
-      const currentRequest =
-        ++latestLoadRequest;
+    if (
+      isMountedRef.current &&
+      !shouldShowInitialLoader
+    ) {
+      setIsKitchenRefreshing(true);
+    }
 
-      if (isMounted) {
-        setIsKitchenLoaded(false);
+    try {
+      const supabase =
+        createClient();
+
+      const {
+        data: { session },
+        error: sessionError,
+      } =
+        await supabase.auth.getSession();
+
+      if (
+        !isMountedRef.current ||
+        currentRequest !==
+          latestLoadRequestRef.current
+      ) {
+        return;
+      }
+
+      if (sessionError) {
+        throw new Error(
+          sessionError.message
+        );
+      }
+
+      /*
+       * A missing session is expected on
+       * public authentication pages.
+       */
+      if (!session?.user) {
+        clearKitchenData();
+
+        hasCompletedInitialLoadRef.current =
+          true;
+
+        return;
+      }
+
+      const [
+        cloudPantry,
+        cloudRecipes,
+        cloudShopping,
+        cloudPlanner,
+      ] = await Promise.all([
+        loadCloudPantry(),
+        loadCloudRecipes(),
+        loadCloudGrocery(),
+        loadCloudPlanner(),
+      ]);
+
+      if (
+        !isMountedRef.current ||
+        currentRequest !==
+          latestLoadRequestRef.current
+      ) {
+        return;
+      }
+
+      setPantry(cloudPantry);
+      setRecipes(cloudRecipes);
+      setShopping(cloudShopping);
+      setPlanner(cloudPlanner);
+
+      hasCompletedInitialLoadRef.current =
+        true;
+    } catch (error) {
+      console.error(
+        "Unable to load Kitchen data:",
+        error
+      );
+
+      /*
+       * Preserve previously loaded data during
+       * a background refresh failure.
+       *
+       * Clear data only when the first load
+       * has never completed.
+       */
+      if (
+        isMountedRef.current &&
+        currentRequest ===
+          latestLoadRequestRef.current &&
+        !hasCompletedInitialLoadRef.current
+      ) {
         clearKitchenData();
       }
-
-      try {
-        const {
-          data: { session },
-          error: sessionError,
-        } =
-          await supabase.auth.getSession();
-
-        if (
-          !isMounted ||
-          currentRequest !==
-            latestLoadRequest
-        ) {
-          return;
-        }
-
-        if (sessionError) {
-          throw new Error(
-            sessionError.message
-          );
-        }
-
-        /*
-         * A missing session is expected on public
-         * authentication pages such as Login,
-         * Sign Up and Forgot Password.
-         */
-        if (!session?.user) {
-          clearKitchenData();
-          return;
-        }
-
-        const [
-          cloudPantry,
-          cloudRecipes,
-          cloudShopping,
-          cloudPlanner,
-        ] = await Promise.all([
-          loadCloudPantry(),
-          loadCloudRecipes(),
-          loadCloudGrocery(),
-          loadCloudPlanner(),
-        ]);
-
-        if (
-          !isMounted ||
-          currentRequest !==
-            latestLoadRequest
-        ) {
-          return;
-        }
-
-        setPantry(cloudPantry);
-        setRecipes(cloudRecipes);
-        setShopping(cloudShopping);
-        setPlanner(cloudPlanner);
-      } catch (error) {
-        console.error(
-          "Unable to load Kitchen data:",
-          error
-        );
-
-        if (
-          isMounted &&
-          currentRequest ===
-            latestLoadRequest
-        ) {
-          clearKitchenData();
-        }
-      } finally {
-        if (
-          isMounted &&
-          currentRequest ===
-            latestLoadRequest
-        ) {
-          setIsKitchenLoaded(true);
-        }
+    } finally {
+      if (
+        isMountedRef.current &&
+        currentRequest ===
+          latestLoadRequestRef.current
+      ) {
+        setIsKitchenLoaded(true);
+        setIsKitchenRefreshing(false);
       }
     }
+  }
 
-    void loadKitchenData();
+  async function refreshKitchen() {
+    await loadKitchenData();
+  }
+
+  useEffect(() => {
+    isMountedRef.current = true;
+
+    const supabase =
+      createClient();
+
+    void loadKitchenData({
+      forceInitialLoader: true,
+    });
 
     const {
       data: { subscription },
     } =
       supabase.auth.onAuthStateChange(
         (event) => {
-          if (!isMounted) {
-            return;
-          }
-
-          if (event === "SIGNED_OUT") {
-            latestLoadRequest += 1;
-            clearKitchenData();
-            setIsKitchenLoaded(true);
+          if (
+            !isMountedRef.current
+          ) {
             return;
           }
 
           if (
+            event === "SIGNED_OUT"
+          ) {
+            latestLoadRequestRef.current += 1;
+
+            clearKitchenData();
+
+            hasCompletedInitialLoadRef.current =
+              false;
+
+            setIsKitchenLoaded(true);
+            setIsKitchenRefreshing(false);
+
+            return;
+          }
+
+          /*
+           * A real sign-in or user change should
+           * reload Kitchen data.
+           */
+          if (
             event === "SIGNED_IN" ||
-            event ===
-              "TOKEN_REFRESHED" ||
             event === "USER_UPDATED"
           ) {
             void loadKitchenData();
           }
+
+          /*
+           * TOKEN_REFRESHED is intentionally not
+           * reloading all Kitchen modules.
+           *
+           * Refreshing the authentication token
+           * does not mean the Pantry, Grocery,
+           * Recipes or Planner data changed.
+           */
         }
       );
 
     return () => {
-      isMounted = false;
-      latestLoadRequest += 1;
+      isMountedRef.current =
+        false;
+
+      latestLoadRequestRef.current += 1;
+
       subscription.unsubscribe();
     };
   }, []);
@@ -212,13 +295,19 @@ export function KitchenProvider({
       value={{
         pantry,
         setPantry,
+
         recipes,
         setRecipes,
+
         shopping,
         setShopping,
+
         planner,
         setPlanner,
+
         isKitchenLoaded,
+        isKitchenRefreshing,
+        refreshKitchen,
       }}
     >
       {children}

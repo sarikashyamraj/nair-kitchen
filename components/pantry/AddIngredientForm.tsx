@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+
 import { PantryItem } from "../../types/pantry";
 import { UNITS } from "../../constants/units";
 import { INGREDIENT_CATEGORIES } from "../../constants/categories";
@@ -14,7 +15,9 @@ import Select from "../ui/Select";
 type AddIngredientFormProps = {
   itemToEdit?: PantryItem | null;
   onClose: () => void;
-  onSave: (item: PantryItem) => void;
+  onSave: (
+    item: PantryItem
+  ) => Promise<void>;
 };
 
 export default function AddIngredientForm({
@@ -24,126 +27,321 @@ export default function AddIngredientForm({
 }: AddIngredientFormProps) {
   const { showToast } = useToast();
 
-  const [name, setName] = useState(itemToEdit?.name || "");
-  const [quantity, setQuantity] = useState(
-    itemToEdit?.quantity ? String(itemToEdit.quantity) : ""
+  const [name, setName] = useState(
+    itemToEdit?.name ?? ""
   );
-  const [unit, setUnit] = useState(itemToEdit?.unit || "kg");
-  const [category, setCategory] = useState(itemToEdit?.category || "Vegetables");
-  const [minQuantity, setMinQuantity] = useState(
-    itemToEdit?.minQuantity ? String(itemToEdit.minQuantity) : ""
-  );
-  const [notes, setNotes] = useState(itemToEdit?.notes || "");
 
-  function handleNameChange(value: string) {
+  const [quantity, setQuantity] =
+    useState(
+      itemToEdit
+        ? String(itemToEdit.quantity)
+        : ""
+    );
+
+  const [unit, setUnit] = useState(
+    itemToEdit?.unit ?? "kg"
+  );
+
+  const [category, setCategory] =
+    useState(
+      itemToEdit?.category ??
+        "Vegetables"
+    );
+
+  const [
+    minQuantity,
+    setMinQuantity,
+  ] = useState(
+    itemToEdit
+      ? String(
+          itemToEdit.minQuantity
+        )
+      : "1"
+  );
+
+  const [notes, setNotes] =
+    useState(
+      itemToEdit?.notes ?? ""
+    );
+
+  const [isSaving, setIsSaving] =
+    useState(false);
+
+  function handleNameChange(
+    value: string
+  ) {
     setName(value);
 
-    const suggested = suggestCategory(value);
+    const suggested =
+      suggestCategory(value);
 
     if (suggested) {
       setCategory(suggested);
     }
   }
 
-  function handleSave() {
-    if (!name.trim() || !quantity) {
+  async function handleSave() {
+    if (isSaving) {
+      return;
+    }
+
+    const trimmedName =
+      name.trim();
+
+    const parsedQuantity =
+      Number(quantity);
+
+    const parsedMinimum =
+      Number(minQuantity);
+
+    if (!trimmedName) {
       showToast({
         type: "warning",
-        message: "Please enter ingredient name and quantity.",
+        message:
+          "Please enter an ingredient name.",
       });
       return;
     }
 
-    const minQty = minQuantity ? Number(minQuantity) : 1;
+    if (
+      quantity.trim() === "" ||
+      !Number.isFinite(
+        parsedQuantity
+      ) ||
+      parsedQuantity < 0
+    ) {
+      showToast({
+        type: "warning",
+        message:
+          "Quantity must be zero or greater.",
+      });
+      return;
+    }
 
-    onSave({
-      id: itemToEdit?.id || crypto.randomUUID(),
-      name,
-      quantity: Number(quantity),
+    if (
+      minQuantity.trim() ===
+        "" ||
+      !Number.isFinite(
+        parsedMinimum
+      ) ||
+      parsedMinimum < 0
+    ) {
+      showToast({
+        type: "warning",
+        message:
+          "Minimum quantity must be zero or greater.",
+      });
+      return;
+    }
+
+    if (!unit.trim()) {
+      showToast({
+        type: "warning",
+        message:
+          "Please select a unit.",
+      });
+      return;
+    }
+
+    if (!category.trim()) {
+      showToast({
+        type: "warning",
+        message:
+          "Please select a category.",
+      });
+      return;
+    }
+
+    const pantryItem: PantryItem = {
+      id:
+        itemToEdit?.id ??
+        crypto.randomUUID(),
+
+      name: trimmedName,
+      quantity:
+        parsedQuantity,
       unit,
       category,
-      minQuantity: minQty,
-      notes,
-    });
+      minQuantity:
+        parsedMinimum,
+      notes:
+        notes.trim(),
+    };
 
-    showToast({
-      type: "success",
-      message: itemToEdit
-        ? "Ingredient updated successfully."
-        : "Ingredient added successfully.",
-    });
-
-    onClose();
+    try {
+      setIsSaving(true);
+      await onSave(pantryItem);
+    } catch {
+      // Parent shows the save error.
+    } finally {
+      setIsSaving(false);
+    }
   }
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-      <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md max-h-[90vh] overflow-y-auto">
-        <h2 className="text-2xl font-bold text-[#2F6B3C]">
-          {itemToEdit ? "Edit Ingredient" : "Add Ingredient"}
-        </h2>
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 px-3 pt-6 sm:items-center sm:px-4 sm:py-6">
+      <div className="w-full max-w-md overflow-hidden rounded-t-3xl bg-white shadow-2xl sm:rounded-2xl">
+        <div className="border-b border-[#F4E8D0] px-5 py-4 sm:px-6">
+          <div className="mx-auto mb-3 h-1.5 w-12 rounded-full bg-gray-200 sm:hidden" />
 
-        <div className="mt-6 space-y-4">
-          <Input
-            label="Ingredient Name"
-            value={name}
-            onChange={(e) => handleNameChange(e.target.value)}
-            placeholder="Milk"
-          />
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#D89B3C]">
+                Smart Pantry
+              </p>
 
-          <Input
-            label="Current Quantity"
-            value={quantity}
-            onChange={(e) => setQuantity(e.target.value)}
-            placeholder="2"
-            type="number"
-          />
+              <h2 className="mt-1 text-xl font-bold text-[#2F6B3C] sm:text-2xl">
+                {itemToEdit
+                  ? "Edit Ingredient"
+                  : "Add Ingredient"}
+              </h2>
 
-          <Input
-            label="Minimum Quantity"
-            value={minQuantity}
-            onChange={(e) => setMinQuantity(e.target.value)}
-            placeholder="Low stock alert"
-            type="number"
-          />
+              <p className="mt-1 text-sm leading-5 text-gray-500">
+                Track current stock and set the level that should trigger a low-stock alert.
+              </p>
+            </div>
 
-          <Select
-            label="Unit"
-            value={unit}
-            onChange={(e) => setUnit(e.target.value)}
-            options={[...UNITS]}
-          />
-
-          <Select
-            label="Category"
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-            options={[...INGREDIENT_CATEGORIES]}
-          />
-
-          <div>
-            <label className="block mb-2 text-sm font-medium text-[#5A4032]">
-              Notes
-            </label>
-
-            <textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              className="w-full rounded-xl border border-[#EADCC4] bg-white px-4 py-3 text-[#5A4032] shadow-sm focus:border-[#2F6B3C] focus:ring-2 focus:ring-[#2F6B3C]/20 focus:outline-none"
-              placeholder="Notes"
-              rows={3}
-            />
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={isSaving}
+              aria-label="Close ingredient form"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#EADCC4] text-lg text-gray-500 transition hover:bg-[#FAF8F3] disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              ×
+            </button>
           </div>
         </div>
 
-        <div className="flex justify-end gap-3 mt-6">
-          <Button variant="outline" onClick={onClose}>
-            Cancel
-          </Button>
+        <div className="max-h-[calc(100dvh-11rem)] overflow-y-auto px-5 py-5 sm:max-h-[70vh] sm:px-6">
+          <div className="space-y-5">
+            <section>
+              <p className="mb-3 text-xs font-semibold uppercase tracking-[0.14em] text-gray-400">
+                Ingredient
+              </p>
 
-          <Button onClick={handleSave}>
-            {itemToEdit ? "Update" : "Save"}
-          </Button>
+              <div className="space-y-4">
+                <Input
+                  label="Ingredient Name"
+                  value={name}
+                  onChange={(event) =>
+                    handleNameChange(
+                      event.target.value
+                    )
+                  }
+                  placeholder="Milk"
+                />
+
+                <div className="grid grid-cols-2 gap-3">
+                  <Input
+                    label="Current Quantity"
+                    value={quantity}
+                    onChange={(event) =>
+                      setQuantity(
+                        event.target.value
+                      )
+                    }
+                    placeholder="2"
+                    type="number"
+                    min="0"
+                  />
+
+                  <Select
+                    label="Unit"
+                    value={unit}
+                    onChange={(event) =>
+                      setUnit(
+                        event.target.value
+                      )
+                    }
+                    options={[...UNITS]}
+                  />
+                </div>
+              </div>
+            </section>
+
+            <section className="rounded-2xl border border-[#F4E8D0] bg-[#FAF8F3] p-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-gray-400">
+                Smart Stock Settings
+              </p>
+
+              <p className="mt-1 text-xs leading-5 text-gray-500">
+                Kitchen Brain will flag the item when the available quantity reaches this level.
+              </p>
+
+              <div className="mt-4 grid grid-cols-2 gap-3">
+                <Input
+                  label="Minimum Quantity"
+                  value={minQuantity}
+                  onChange={(event) =>
+                    setMinQuantity(
+                      event.target.value
+                    )
+                  }
+                  placeholder="1"
+                  type="number"
+                  min="0"
+                />
+
+                <Select
+                  label="Category"
+                  value={category}
+                  onChange={(event) =>
+                    setCategory(
+                      event.target.value
+                    )
+                  }
+                  options={[
+                    ...INGREDIENT_CATEGORIES,
+                  ]}
+                />
+              </div>
+            </section>
+
+            <div>
+              <label className="mb-2 block text-sm font-medium text-[#5A4032]">
+                Notes
+                <span className="ml-1 font-normal text-gray-400">
+                  (Optional)
+                </span>
+              </label>
+
+              <textarea
+                value={notes}
+                onChange={(event) =>
+                  setNotes(
+                    event.target.value
+                  )
+                }
+                className="w-full resize-none rounded-xl border border-[#EADCC4] bg-white px-4 py-3 text-[#5A4032] shadow-sm focus:border-[#2F6B3C] focus:outline-none focus:ring-2 focus:ring-[#2F6B3C]/20"
+                placeholder="Brand, storage notes or other details"
+                rows={3}
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="border-t border-[#F4E8D0] bg-white px-5 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-4 sm:px-6 sm:pb-5">
+          <div className="flex gap-3">
+            <Button
+              variant="outline"
+              onClick={onClose}
+              disabled={isSaving}
+            >
+              Cancel
+            </Button>
+
+            <Button
+              onClick={handleSave}
+              disabled={isSaving}
+            >
+              {isSaving
+                ? "Saving..."
+                : itemToEdit
+                  ? "Update Ingredient"
+                  : "Save Ingredient"}
+            </Button>
+          </div>
         </div>
       </div>
     </div>

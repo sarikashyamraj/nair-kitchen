@@ -433,21 +433,21 @@ export default function TopHeader() {
     "Kitchen Manager";
 
   return (
-    <header className="mb-6 rounded-2xl border border-[#F4E8D0] bg-white px-4 py-4 shadow-sm sm:px-6 sm:py-5 lg:mb-8 lg:px-8 lg:py-6">
+    <header className="mb-3 rounded-2xl border border-[#F4E8D0] bg-white px-4 py-3 shadow-sm sm:px-6 sm:py-5 lg:mb-8 lg:px-8 lg:py-6">
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
-          <h1 className="text-xl font-bold leading-tight text-[#2F6B3C] sm:text-3xl">
+          <h1 className="text-lg font-bold leading-tight text-[#2F6B3C] sm:text-3xl">
             {displayName
               ? `${greeting}, ${displayName} 👋`
               : `${greeting} 👋`}
           </h1>
 
-          <p className="mt-1 text-xs text-[#6B7280] sm:text-base">
+          <p className="mt-0.5 text-xs text-[#6B7280] sm:text-base">
             {formattedDate}
           </p>
         </div>
 
-        <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">
+        <div className="flex shrink-0 items-center gap-1 sm:gap-3">
           <div
             ref={notificationRef}
             className="relative"

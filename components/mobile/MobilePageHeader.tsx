@@ -10,18 +10,16 @@ export default function MobilePageHeader({
   subtitle,
 }: MobilePageHeaderProps) {
   return (
-    <div className="md:hidden mb-5">
-      <h1 className="text-2xl font-bold text-[#2F6B3C]">
+    <div className="mb-3 md:hidden">
+      <h1 className="text-[22px] font-bold leading-tight text-[#245B32]">
         {title}
       </h1>
 
       {subtitle && (
-        <p className="text-gray-500 mt-1">
+        <p className="mt-1 text-sm text-gray-500">
           {subtitle}
         </p>
       )}
-
-      <div className="border-b border-[#EADCC4] mt-4" />
     </div>
   );
 }
