@@ -1,6 +1,6 @@
 # Architecture Decision Records (ADR)
 
-This folder contains the key architectural decisions made during the development of **Nair Kitchen**.
+This folder contains the key architectural decisions made during the development of **Kitchen Brain**.
 
 The purpose of these ADRs is to document not only what was implemented, but why certain technical decisions were made, along with their benefits and trade-offs.
 

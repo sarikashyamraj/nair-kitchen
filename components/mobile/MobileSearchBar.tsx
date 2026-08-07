@@ -5,6 +5,8 @@ import {
   Search,
 } from "lucide-react";
 
+import KBDropdown from "../ui/KBDropdown";
+
 type MobileSearchBarProps = {
   searchValue: string;
   onSearchChange: (
@@ -26,6 +28,15 @@ export default function MobileSearchBar({
   onCategoryChange,
   placeholder = "Search...",
 }: MobileSearchBarProps) {
+  const categoryOptions =
+    categories.map((category) => ({
+      value: category,
+      label:
+        category === "All"
+          ? "All Categories"
+          : category,
+    }));
+
   return (
     <section className="mb-4 rounded-2xl border border-[#EADCC4] bg-white p-3 shadow-sm md:hidden">
       <div className="relative">
@@ -48,43 +59,29 @@ export default function MobileSearchBar({
       </div>
 
       {categories.length > 0 &&
-        onCategoryChange && (
-          <div className="mt-3 flex items-center gap-3 border-t border-[#F4E8D0] pt-3">
-            <Grid2X2
-              size={18}
-              className="shrink-0 text-[#2F6B3C]"
-            />
+        onCategoryChange &&
+        categoryValue !==
+          undefined && (
+          <div className="mt-3 border-t border-[#F4E8D0] pt-3">
+            <div className="mb-2 flex items-center gap-2">
+              <Grid2X2
+                size={18}
+                className="text-[#2F6B3C]"
+              />
 
-            <label
-              htmlFor="pantry-category"
-              className="text-sm font-semibold text-[#5A4032]"
-            >
-              Category
-            </label>
+              <p className="text-sm font-semibold text-[#5A4032]">
+                Category
+              </p>
+            </div>
 
-            <select
-              id="pantry-category"
+            <KBDropdown
               value={categoryValue}
-              onChange={(event) =>
-                onCategoryChange(
-                  event.target.value
-                )
+              options={categoryOptions}
+              onChange={
+                onCategoryChange
               }
-              className="ml-auto min-w-0 flex-1 appearance-none bg-transparent text-right text-sm font-medium text-[#5A4032] outline-none"
-            >
-              {categories.map(
-                (category) => (
-                  <option
-                    key={category}
-                    value={category}
-                  >
-                    {category === "All"
-                      ? "All Categories"
-                      : category}
-                  </option>
-                )
-              )}
-            </select>
+              placeholder="All Categories"
+            />
           </div>
         )}
     </section>

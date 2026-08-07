@@ -1,3 +1,7 @@
+"use client";
+
+import Image from "next/image";
+
 import {
   Pencil,
   Trash2,
@@ -11,44 +15,15 @@ import {
   getPantryStockStatus,
 } from "../../lib/pantry/pantryStatus";
 
+import {
+  getIngredientImage,
+} from "../../lib/ingredients/getIngredientImage";
+
 type PantryMobileCardsProps = {
   items: PantryItem[];
   onEdit: (item: PantryItem) => void;
   onDelete: (id: string) => void;
 };
-
-function getCategoryIcon(
-  category: string
-) {
-  switch (category) {
-    case "Grains":
-      return "🌾";
-
-    case "Dairy":
-      return "🥛";
-
-    case "Vegetables":
-      return "🥬";
-
-    case "Meat":
-      return "🍗";
-
-    case "Seafood":
-      return "🐟";
-
-    case "Spices":
-      return "🌶️";
-
-    case "Snacks":
-      return "🍪";
-
-    case "Household":
-      return "🧴";
-
-    default:
-      return "🥣";
-  }
-}
 
 export default function PantryMobileCards({
   items,
@@ -59,7 +34,7 @@ export default function PantryMobileCards({
     return (
       <div className="rounded-2xl border border-[#EADCC4] bg-white p-6 text-center shadow-sm md:hidden">
         <p className="font-bold text-[#2F6B3C]">
-          No ingredients found
+          No items found
         </p>
 
         <p className="mt-1 text-sm leading-6 text-gray-500">
@@ -88,6 +63,12 @@ export default function PantryMobileCards({
               ? "text-[#C47A00]"
               : "text-[#245B32]";
 
+        const imageSrc =
+  getIngredientImage(
+    item.name,
+    item.category
+  );
+
         return (
           <article
             key={item.id}
@@ -95,12 +76,18 @@ export default function PantryMobileCards({
           >
             <div className="p-4">
               <div className="flex items-start gap-3">
-                <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#F4E8D0] to-[#FAF8F3] text-3xl">
-                  {getCategoryIcon(
-                    item.category
-                  )}
+                {/* Item Image */}
+                <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-2xl border border-[#F0E7DA] bg-[#FAF8F3]">
+                  <Image
+                    src={imageSrc}
+                    alt={item.name}
+                    fill
+                    sizes="64px"
+                    className="object-cover"
+                  />
                 </div>
 
+                {/* Item Name + Status */}
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <h3 className="min-w-0 truncate text-lg font-bold text-[#245B32]">
@@ -116,6 +103,7 @@ export default function PantryMobileCards({
                 </div>
               </div>
 
+              {/* Stock Information */}
               <div className="mt-4 grid grid-cols-3 divide-x divide-[#F0E7DA]">
                 <div className="pr-3">
                   <p className="text-xs text-gray-500">
@@ -152,6 +140,7 @@ export default function PantryMobileCards({
                 </div>
               </div>
 
+              {/* Notes */}
               {item.notes && (
                 <div className="mt-3 rounded-xl bg-[#FAF8F3] px-3 py-2">
                   <p className="line-clamp-2 text-xs leading-5 text-gray-500">
@@ -161,6 +150,7 @@ export default function PantryMobileCards({
               )}
             </div>
 
+            {/* Actions */}
             <div className="grid grid-cols-2 border-t border-[#F0E7DA]">
               <button
                 type="button"

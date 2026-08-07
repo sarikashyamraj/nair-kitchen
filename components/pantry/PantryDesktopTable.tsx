@@ -28,7 +28,7 @@ export default function PantryDesktopTable({
         </div>
 
         <p className="mt-3 font-semibold text-[#2F6B3C]">
-          No ingredients found
+          No Items found
         </p>
 
         <p className="mt-1 text-sm text-gray-500">
@@ -45,7 +45,7 @@ export default function PantryDesktopTable({
           <thead className="bg-[#F4E8D0] text-[#5A4032]">
             <tr>
               <th className="px-4 py-4">
-                Ingredient
+                Item
               </th>
 
               <th className="px-4 py-4">

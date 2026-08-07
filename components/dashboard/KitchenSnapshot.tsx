@@ -65,17 +65,17 @@ export default function KitchenSnapshot({
       <div className="bg-gradient-to-br from-[#F4FAF3] via-white to-[#FFF8EB] p-5 sm:p-6">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <p className="text-sm font-semibold text-[#C9872F]">
-              Kitchen Snapshot
-            </p>
+            <p className="text-sm font-semibold uppercase tracking-wide text-[#C9872F]">
+  Kitchen Overview
+</p>
 
-            <h2 className="mt-1 text-xl font-bold text-[#2F6B3C] sm:text-2xl">
-              Your kitchen today
-            </h2>
+<h2 className="mt-1 text-2xl font-bold text-[#2F6B3C] sm:text-3xl">
+  Everything at a Glance
+</h2>
 
-            <p className="mt-1 text-sm text-gray-500">
-              Everything important in one place
-            </p>
+<p className="mt-2 text-sm leading-6 text-gray-500">
+  Monitor the overall health of your kitchen.
+</p>
           </div>
 
           <div className="relative flex h-20 w-20 shrink-0 items-center justify-center rounded-full bg-white shadow-sm ring-4 ring-[#DCEBDD]">

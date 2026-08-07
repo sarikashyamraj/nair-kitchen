@@ -44,7 +44,7 @@ export default function PantryListHeader({
   return (
     <div className="mb-3 flex items-center justify-between gap-3">
       <h2 className="text-lg font-bold text-[#245B32] sm:text-xl">
-        Ingredients
+        Items
         <span className="ml-1 font-medium text-gray-500">
           ({itemCount})
         </span>
@@ -63,7 +63,7 @@ export default function PantryListHeader({
                 .value as PantrySortOption
             )
           }
-          aria-label="Sort pantry ingredients"
+          aria-label="Sort inventory items"
           className="max-w-[150px] rounded-lg border border-[#EADCC4] bg-white px-2 py-2 text-xs font-medium text-[#5A4032] outline-none focus:border-[#2F6B3C] sm:max-w-none sm:text-sm"
         >
           {sortOptions.map(

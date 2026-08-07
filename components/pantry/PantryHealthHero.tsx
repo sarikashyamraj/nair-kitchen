@@ -46,7 +46,7 @@ function getHealthPresentation(
         outOfStock > 0
           ? `Restock ${priorityNames.join(
               " and "
-            )} to improve your Pantry Health.`
+            )} to improve your Inventory Health.`
           : `${lowStock} ingredient${
               lowStock === 1 ? " is" : "s are"
             } running low.`,
@@ -63,7 +63,7 @@ function getHealthPresentation(
         priorityNames.length > 0
           ? `Restock ${priorityNames.join(
               " and "
-            )} to improve your Pantry Health.`
+            )} to improve your Inventory Health.`
           : "Several ingredients should be restocked soon.",
       progressClass: "bg-[#D89B3C]",
       accentClass: "text-[#A86516]",
@@ -108,7 +108,7 @@ export default function PantryHealthHero({
 
           <div className="min-w-0">
             <h2 className="text-lg font-bold text-[#245B32] sm:text-xl">
-              Pantry Health
+              Inventory Health
             </h2>
 
             <p

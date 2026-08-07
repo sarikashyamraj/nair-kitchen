@@ -1,6 +1,6 @@
-# Nair Kitchen – Product Decisions
+# Kitchen Brain – Product Decisions
 
-This document records significant product and architecture decisions made during the development of Nair Kitchen.
+This document records significant product and architecture decisions made during the development of Kitchen Brain.
 
 The goal is to preserve the reasoning behind decisions so future development remains consistent.
 
@@ -35,7 +35,7 @@ No confirmation dialog will be shown.
 
 ## Reason
 
-Nair Kitchen is a family kitchen management application, not an inventory management system.
+Kitchen Brain is a family kitchen management application, not an inventory management system.
 
 Automatic merging keeps the pantry clean, reduces duplicate entries, and minimizes user interaction.
 
@@ -129,4 +129,4 @@ AI features will only be considered after the core workflow has proven reliable 
 
 # Future Decisions
 
-This section will grow as Nair Kitchen evolves.
+This section will grow as Kitchen Brain evolves.

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import AppLayout from "../../components/AppLayout";
 
@@ -11,14 +11,11 @@ import RecipeForm from "../../components/recipes/RecipeForm";
 
 import MobilePageHeader from "../../components/mobile/MobilePageHeader";
 import MobileSearchBar from "../../components/mobile/MobileSearchBar";
-import MobileFAB from "../../components/mobile/MobileFAB";
+import KBFloatingButton from "../../components/ui/KBFloatingButton";
 
 import { Recipe } from "../../types/recipe";
 
 import { useKitchen } from "../../context/KitchenContext";
-import { useToast } from "../../context/ToastContext";
-
-import { loadCloudRecipes } from "../../services/recipeService";
 
 const categories = [
   "All",
@@ -28,75 +25,33 @@ const categories = [
 ];
 
 export default function RecipesPage() {
-  const { recipes, setRecipes } =
-    useKitchen();
+  const {
+    recipes,
+    setRecipes,
+    isKitchenLoaded,
+  } = useKitchen();
 
-  const { showToast } = useToast();
+  const [
+    isFormOpen,
+    setIsFormOpen,
+  ] = useState(false);
 
-  const [isFormOpen, setIsFormOpen] =
-    useState(false);
+  const [
+    editingRecipe,
+    setEditingRecipe,
+  ] = useState<Recipe | null>(
+    null
+  );
 
-  const [editingRecipe, setEditingRecipe] =
-    useState<Recipe | null>(null);
-
-  const [searchTerm, setSearchTerm] =
-    useState("");
+  const [
+    searchTerm,
+    setSearchTerm,
+  ] = useState("");
 
   const [
     selectedCategory,
     setSelectedCategory,
   ] = useState("All");
-
-  const [isLoaded, setIsLoaded] =
-    useState(false);
-
-  const [loadError, setLoadError] =
-    useState("");
-
-  useEffect(() => {
-    let isMounted = true;
-
-    async function loadRecipeData() {
-      try {
-        setLoadError("");
-
-        const cloudRecipes =
-          await loadCloudRecipes();
-
-        if (!isMounted) {
-          return;
-        }
-
-        setRecipes(cloudRecipes);
-      } catch (error) {
-        if (!isMounted) {
-          return;
-        }
-
-        const message =
-          error instanceof Error
-            ? error.message
-            : "Unable to load Recipes.";
-
-        setLoadError(message);
-
-        showToast({
-          type: "error",
-          message,
-        });
-      } finally {
-        if (isMounted) {
-          setIsLoaded(true);
-        }
-      }
-    }
-
-    void loadRecipeData();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [setRecipes, showToast]);
 
   function openAddForm() {
     setEditingRecipe(null);
@@ -108,7 +63,7 @@ export default function RecipesPage() {
     setIsFormOpen(false);
   }
 
-  if (!isLoaded) {
+  if (!isKitchenLoaded) {
     return (
       <AppLayout>
         <div className="flex min-h-[60vh] items-center justify-center">
@@ -120,19 +75,9 @@ export default function RecipesPage() {
     );
   }
 
-  if (loadError) {
-    return (
-      <AppLayout>
-        <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-red-700">
-          {loadError}
-        </div>
-      </AppLayout>
-    );
-  }
-
   return (
     <AppLayout>
-      <div className="space-y-6">
+      <div className="space-y-6 pb-28 md:pb-0">
         <div className="sticky top-0 z-30 -mx-4 bg-[#FFFDF8] px-4 pb-3 pt-1 md:hidden">
           <MobilePageHeader
             title="Recipes"
@@ -141,12 +86,18 @@ export default function RecipesPage() {
 
           <div className="mt-3">
             <MobileSearchBar
-              searchValue={searchTerm}
-              onSearchChange={setSearchTerm}
+              searchValue={
+                searchTerm
+              }
+              onSearchChange={
+                setSearchTerm
+              }
               categoryValue={
                 selectedCategory
               }
-              categories={categories}
+              categories={
+                categories
+              }
               onCategoryChange={
                 setSelectedCategory
               }
@@ -157,9 +108,15 @@ export default function RecipesPage() {
 
         <div className="hidden md:block">
           <RecipesHeader
-            onAdd={openAddForm}
-            searchTerm={searchTerm}
-            setSearchTerm={setSearchTerm}
+            onAdd={
+              openAddForm
+            }
+            searchTerm={
+              searchTerm
+            }
+            setSearchTerm={
+              setSearchTerm
+            }
             selectedCategory={
               selectedCategory
             }
@@ -177,10 +134,16 @@ export default function RecipesPage() {
           recipes={recipes}
           setRecipes={setRecipes}
           onEdit={(recipe) => {
-            setEditingRecipe(recipe);
-            setIsFormOpen(true);
+            setEditingRecipe(
+              recipe
+            );
+            setIsFormOpen(
+              true
+            );
           }}
-          searchTerm={searchTerm}
+          searchTerm={
+            searchTerm
+          }
           selectedCategory={
             selectedCategory
           }
@@ -188,17 +151,26 @@ export default function RecipesPage() {
 
         {isFormOpen && (
           <RecipeForm
-            recipe={editingRecipe}
+            recipe={
+              editingRecipe
+            }
             recipes={recipes}
-            setRecipes={setRecipes}
-            onClose={closeForm}
+            setRecipes={
+              setRecipes
+            }
+            onClose={
+              closeForm
+            }
           />
         )}
       </div>
 
-      <MobileFAB
-        label="Add Recipe"
-        onClick={openAddForm}
+      <KBFloatingButton
+        label="Add"
+        ariaLabel="Add recipe"
+        onClick={
+          openAddForm
+        }
       />
     </AppLayout>
   );

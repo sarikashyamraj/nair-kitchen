@@ -8,7 +8,7 @@ Accepted
 
 ## Context
 
-One of the primary objectives of Nair Kitchen is to simplify weekly meal planning and grocery shopping.
+One of the primary objectives of Kitchen Brain is to simplify weekly meal planning and grocery shopping.
 
 Without automation, users would need to:
 
@@ -126,7 +126,7 @@ Rejected because it would result in unnecessary purchases.
 
 ## Consequences
 
-The Planner became the central orchestration module of Nair Kitchen.
+The Planner became the central orchestration module of Kitchen Brain.
 
 It integrates:
 

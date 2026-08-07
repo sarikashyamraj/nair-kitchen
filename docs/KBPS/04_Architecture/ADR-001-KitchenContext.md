@@ -8,7 +8,7 @@ Accepted
 
 ## Context
 
-Initially, each module of Nair Kitchen managed its own data independently using local component state and browser localStorage.
+Initially, each module of Kitchen Brain managed its own data independently using local component state and browser localStorage.
 
 Examples included:
 

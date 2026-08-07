@@ -1,20 +1,32 @@
-// Pantry / Grocery Categories
+// Home Inventory / Grocery Categories
 
-export const INGREDIENT_CATEGORIES = [
-  "Vegetables",
-  "Fruits",
+export const HOME_INVENTORY_CATEGORIES = [
   "Grains",
   "Dairy",
+  "Vegetables",
+  "Fruits",
   "Meat",
   "Seafood",
   "Spices",
-  "Beverages",
   "Snacks",
+  "Beverages",
   "Frozen",
   "Bakery",
   "Household",
   "Other",
+] as const;
+
+/*
+ * Backward-compatible export.
+ *
+ * Existing forms and services currently import
+ * INGREDIENT_CATEGORIES, so we keep this alias
+ * until the future Inventory refactor.
+ */
+export const INGREDIENT_CATEGORIES = [
+  ...HOME_INVENTORY_CATEGORIES,
 ];
+
 
 // Recipe Categories
 
@@ -23,6 +35,7 @@ export const RECIPE_CATEGORIES = [
   "Non-Veg",
   "Vegan",
 ];
+
 
 // Meal Types
 
