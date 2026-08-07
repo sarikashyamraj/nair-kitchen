@@ -7,12 +7,12 @@ export const HOME_INVENTORY_CATEGORIES = [
   "Fruits",
   "Meat",
   "Seafood",
+  "Household",
   "Spices",
   "Snacks",
   "Beverages",
   "Frozen",
   "Bakery",
-  "Household",
   "Other",
 ] as const;
 

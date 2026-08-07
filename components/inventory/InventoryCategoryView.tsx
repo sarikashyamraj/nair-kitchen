@@ -6,6 +6,7 @@ import {
   ArrowLeft,
   CircleAlert,
   CircleCheck,
+  Plus,
   Search,
 } from "lucide-react";
 
@@ -52,6 +53,8 @@ type InventoryCategoryViewProps = {
 
   onBack: () => void;
 
+  onAddItem: () => void;
+
   onEdit: (
     item: PantryItem
   ) => void;
@@ -70,6 +73,7 @@ export default function InventoryCategoryView({
   sortOption,
   onSortChange,
   onBack,
+  onAddItem,
   onEdit,
   onDelete,
 }: InventoryCategoryViewProps) {
@@ -102,10 +106,7 @@ export default function InventoryCategoryView({
         onClick={onBack}
         className="inline-flex min-h-10 items-center gap-2 rounded-xl px-1 text-sm font-semibold text-[#2F6B3C] transition active:scale-[0.98]"
       >
-        <ArrowLeft
-          size={18}
-        />
-
+        <ArrowLeft size={18} />
         All Categories
       </button>
 
@@ -140,29 +141,19 @@ export default function InventoryCategoryView({
             <div className="mt-3 flex flex-wrap items-center gap-2">
               <span className="rounded-full bg-[#F8F4EC] px-2.5 py-1 text-[11px] font-semibold text-[#5A4032]">
                 {summary.totalItems}{" "}
-                {summary.totalItems ===
-                1
+                {summary.totalItems === 1
                   ? "item"
                   : "items"}
               </span>
 
-              {attentionCount >
-              0 ? (
+              {attentionCount > 0 ? (
                 <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-700">
-                  <CircleAlert
-                    size={12}
-                  />
-
-                  {attentionCount} need
-                  attention
+                  <CircleAlert size={12} />
+                  {attentionCount} need attention
                 </span>
-              ) : summary.totalItems >
-                0 ? (
+              ) : summary.totalItems > 0 ? (
                 <span className="inline-flex items-center gap-1 rounded-full bg-green-50 px-2.5 py-1 text-[11px] font-semibold text-green-700">
-                  <CircleCheck
-                    size={12}
-                  />
-
+                  <CircleCheck size={12} />
                   All stocked
                 </span>
               ) : null}
@@ -228,17 +219,31 @@ export default function InventoryCategoryView({
 
       {/* Items */}
       <div>
-        <PantryListHeader
-          itemCount={
-            filteredItems.length
-          }
-          sortOption={
-            sortOption
-          }
-          onSortChange={
-            onSortChange
-          }
-        />
+        <div className="mb-3 flex items-center gap-3">
+          <div className="min-w-0 flex-1">
+            <PantryListHeader
+              itemCount={
+                filteredItems.length
+              }
+              sortOption={
+                sortOption
+              }
+              onSortChange={
+                onSortChange
+              }
+            />
+          </div>
+
+          {/* Desktop Add Item */}
+          <button
+            type="button"
+            onClick={onAddItem}
+            className="hidden min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-[#2F6B3C] px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-[#245B32] active:scale-[0.98] md:inline-flex"
+          >
+            <Plus size={17} />
+            Add Item
+          </button>
+        </div>
 
         <PantryTable
           items={

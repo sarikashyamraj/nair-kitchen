@@ -3,6 +3,10 @@ import {
 } from "./ingredientImages";
 
 import {
+  ingredientImageAliases,
+} from "./ingredientImageAliases";
+
+import {
   inventoryCategoryImages,
 } from "../inventory/inventoryCategoryImages";
 
@@ -14,7 +18,7 @@ export function getIngredientImage(
     .trim()
     .toLowerCase();
 
-  // 1. Use exact item image when available
+  // 1. Exact item image
   const exactImage =
     ingredientImages[key];
 
@@ -22,7 +26,20 @@ export function getIngredientImage(
     return exactImage;
   }
 
-  // 2. Otherwise use category image
+  // 2. Check known aliases
+  const alias =
+    ingredientImageAliases[key];
+
+  if (alias) {
+    const aliasImage =
+      ingredientImages[alias];
+
+    if (aliasImage) {
+      return aliasImage;
+    }
+  }
+
+  // 3. Category fallback
   if (category) {
     const categoryImage =
       inventoryCategoryImages[
@@ -34,6 +51,6 @@ export function getIngredientImage(
     }
   }
 
-  // 3. Final fallback
+  // 4. Final fallback
   return "/ingredients/defaults/unknown.webp";
 }

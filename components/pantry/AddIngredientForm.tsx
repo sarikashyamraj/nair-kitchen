@@ -4,7 +4,6 @@ import { useState } from "react";
 
 import { PantryItem } from "../../types/pantry";
 import { UNITS } from "../../constants/units";
-import { INGREDIENT_CATEGORIES } from "../../constants/categories";
 import { useToast } from "../../context/ToastContext";
 import { suggestCategory } from "../../services/categorySuggestion";
 
@@ -12,9 +11,15 @@ import Button from "../ui/Button";
 import Input from "../ui/Input";
 import Select from "../ui/Select";
 
+import InventoryCategorySelect from "../inventory/InventoryCategorySelect";
+
 type AddIngredientFormProps = {
   itemToEdit?: PantryItem | null;
+
+  initialCategory?: string | null;
+
   onClose: () => void;
+
   onSave: (
     item: PantryItem
   ) => Promise<void>;
@@ -22,23 +27,28 @@ type AddIngredientFormProps = {
 
 export default function AddIngredientForm({
   itemToEdit,
+  initialCategory,
   onClose,
   onSave,
 }: AddIngredientFormProps) {
-  const { showToast } = useToast();
+  const { showToast } =
+    useToast();
 
-  const [name, setName] = useState(
-    itemToEdit?.name ?? ""
-  );
-
-  const [quantity, setQuantity] =
+  const [name, setName] =
     useState(
-      itemToEdit
-        ? String(
-            itemToEdit.quantity
-          )
-        : ""
+      itemToEdit?.name ?? ""
     );
+
+  const [
+    quantity,
+    setQuantity,
+  ] = useState(
+    itemToEdit
+      ? String(
+          itemToEdit.quantity
+        )
+      : ""
+  );
 
   const [unit, setUnit] =
     useState(
@@ -50,6 +60,7 @@ export default function AddIngredientForm({
     setCategory,
   ] = useState(
     itemToEdit?.category ??
+      initialCategory ??
       "Vegetables"
   );
 
@@ -83,7 +94,9 @@ export default function AddIngredientForm({
       suggestCategory(value);
 
     if (suggested) {
-      setCategory(suggested);
+      setCategory(
+        suggested
+      );
     }
   }
 
@@ -164,12 +177,14 @@ export default function AddIngredientForm({
       return;
     }
 
-    const pantryItem: PantryItem = {
+    const pantryItem:
+      PantryItem = {
       id:
         itemToEdit?.id ??
         crypto.randomUUID(),
 
-      name: trimmedName,
+      name:
+        trimmedName,
 
       quantity:
         parsedQuantity,
@@ -225,7 +240,9 @@ export default function AddIngredientForm({
             <button
               type="button"
               onClick={onClose}
-              disabled={isSaving}
+              disabled={
+                isSaving
+              }
               aria-label="Close inventory item form"
               className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#EADCC4] text-lg text-gray-500 transition hover:bg-[#FAF8F3] disabled:cursor-not-allowed disabled:opacity-50"
             >
@@ -234,9 +251,10 @@ export default function AddIngredientForm({
           </div>
         </div>
 
-        {/* Scrollable Form Content */}
+        {/* Scrollable Form */}
         <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5 sm:px-6">
           <div className="space-y-5">
+            {/* Item Details */}
             <section>
               <p className="mb-3 text-xs font-semibold uppercase tracking-[0.14em] text-gray-400">
                 Item Details
@@ -246,9 +264,12 @@ export default function AddIngredientForm({
                 <Input
                   label="Item Name"
                   value={name}
-                  onChange={(event) =>
+                  onChange={(
+                    event
+                  ) =>
                     handleNameChange(
-                      event.target.value
+                      event.target
+                        .value
                     )
                   }
                   placeholder="Milk or Dish Soap"
@@ -257,10 +278,15 @@ export default function AddIngredientForm({
                 <div className="grid grid-cols-2 gap-3">
                   <Input
                     label="Current Quantity"
-                    value={quantity}
-                    onChange={(event) =>
+                    value={
+                      quantity
+                    }
+                    onChange={(
+                      event
+                    ) =>
                       setQuantity(
-                        event.target.value
+                        event.target
+                          .value
                       )
                     }
                     placeholder="2"
@@ -270,10 +296,15 @@ export default function AddIngredientForm({
 
                   <Select
                     label="Unit"
-                    value={unit}
-                    onChange={(event) =>
+                    value={
+                      unit
+                    }
+                    onChange={(
+                      event
+                    ) =>
                       setUnit(
-                        event.target.value
+                        event.target
+                          .value
                       )
                     }
                     options={[
@@ -284,6 +315,7 @@ export default function AddIngredientForm({
               </div>
             </section>
 
+            {/* Smart Stock Settings */}
             <section className="rounded-2xl border border-[#F4E8D0] bg-[#FAF8F3] p-4">
               <p className="text-xs font-semibold uppercase tracking-[0.14em] text-gray-400">
                 Smart Stock Settings
@@ -299,9 +331,12 @@ export default function AddIngredientForm({
                   value={
                     minQuantity
                   }
-                  onChange={(event) =>
+                  onChange={(
+                    event
+                  ) =>
                     setMinQuantity(
-                      event.target.value
+                      event.target
+                        .value
                     )
                   }
                   placeholder="1"
@@ -309,21 +344,18 @@ export default function AddIngredientForm({
                   min="0"
                 />
 
-                <Select
-                  label="Category"
-                  value={category}
-                  onChange={(event) =>
-                    setCategory(
-                      event.target.value
-                    )
+                <InventoryCategorySelect
+                  value={
+                    category
                   }
-                  options={[
-                    ...INGREDIENT_CATEGORIES,
-                  ]}
+                  onChange={
+                    setCategory
+                  }
                 />
               </div>
             </section>
 
+            {/* Notes */}
             <div>
               <label className="mb-2 block text-sm font-medium text-[#5A4032]">
                 Notes
@@ -334,10 +366,15 @@ export default function AddIngredientForm({
               </label>
 
               <textarea
-                value={notes}
-                onChange={(event) =>
+                value={
+                  notes
+                }
+                onChange={(
+                  event
+                ) =>
                   setNotes(
-                    event.target.value
+                    event.target
+                      .value
                   )
                 }
                 className="w-full resize-none rounded-xl border border-[#EADCC4] bg-white px-4 py-3 text-[#5A4032] shadow-sm focus:border-[#2F6B3C] focus:outline-none focus:ring-2 focus:ring-[#2F6B3C]/20"
@@ -353,8 +390,12 @@ export default function AddIngredientForm({
           <div className="grid grid-cols-2 gap-3">
             <Button
               variant="outline"
-              onClick={onClose}
-              disabled={isSaving}
+              onClick={
+                onClose
+              }
+              disabled={
+                isSaving
+              }
             >
               Cancel
             </Button>
