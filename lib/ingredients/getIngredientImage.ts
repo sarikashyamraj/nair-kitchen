@@ -3,43 +3,77 @@ import {
 } from "./ingredientImages";
 
 import {
-  ingredientImageAliases,
-} from "./ingredientImageAliases";
-
-import {
   inventoryCategoryImages,
 } from "../inventory/inventoryCategoryImages";
+
+const ingredientAliases: Record<
+  string,
+  string
+> = {
+  // Milk
+  "full fat milk": "milk",
+  "whole milk": "milk",
+  "fresh milk": "milk",
+  "cow milk": "milk",
+
+  // Eggs
+  "egg": "eggs",
+  "brown eggs": "eggs",
+  "white eggs": "eggs",
+
+  // Tomato
+  "tomatoes": "tomato",
+
+  // Beans
+  "green beans": "beans",
+
+  // Chicken
+  "chicken breast": "chicken",
+  "chicken thighs": "chicken",
+
+  // Paneer
+  "cottage cheese": "paneer",
+
+  // Oats
+  "rolled oats": "oats",
+  "instant oats": "oats",
+
+  // Rice
+  "basmati rice": "rice",
+  "white rice": "rice",
+  "brown rice": "rice",
+
+  // Soy sauce
+  "dark soy sauce":
+    "soy sauce",
+  "light soy sauce":
+    "soy sauce",
+};
 
 export function getIngredientImage(
   ingredient: string,
   category?: string
 ) {
-  const key = ingredient
-    .trim()
-    .toLowerCase();
+  const normalizedName =
+    ingredient
+      .trim()
+      .toLowerCase();
 
-  // 1. Exact item image
+  const resolvedName =
+    ingredientAliases[
+      normalizedName
+    ] ??
+    normalizedName;
+
   const exactImage =
-    ingredientImages[key];
+    ingredientImages[
+      resolvedName
+    ];
 
   if (exactImage) {
     return exactImage;
   }
 
-  // 2. Check known aliases
-  const alias =
-    ingredientImageAliases[key];
-
-  if (alias) {
-    const aliasImage =
-      ingredientImages[alias];
-
-    if (aliasImage) {
-      return aliasImage;
-    }
-  }
-
-  // 3. Category fallback
   if (category) {
     const categoryImage =
       inventoryCategoryImages[
@@ -51,6 +85,5 @@ export function getIngredientImage(
     }
   }
 
-  // 4. Final fallback
   return "/ingredients/defaults/unknown.webp";
 }

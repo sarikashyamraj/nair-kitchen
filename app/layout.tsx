@@ -1,13 +1,21 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import {
+  Plus_Jakarta_Sans,
+  Geist_Mono,
+} from "next/font/google";
+
 import "./globals.css";
+
 import { KitchenProvider } from "../context/KitchenContext";
 import { ToastProvider } from "../context/ToastContext";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
+const plusJakartaSans =
+  Plus_Jakarta_Sans({
+    variable:
+      "--font-plus-jakarta-sans",
+    subsets: ["latin"],
+    display: "swap",
+  });
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
@@ -17,11 +25,16 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: {
     default: "Kitchen Brain",
-    template: "%s | Kitchen Brain",
+    template:
+      "%s | Kitchen Brain",
   },
+
   description:
     "Plan meals, manage your pantry, organize recipes, shop smarter, and simplify everyday family life with Kitchen Brain.",
-  applicationName: "Kitchen Brain",
+
+  applicationName:
+    "Kitchen Brain",
+
   keywords: [
     "Kitchen Brain",
     "meal planner",
@@ -32,14 +45,18 @@ export const metadata: Metadata = {
     "recipe manager",
     "smart kitchen app",
   ],
+
   authors: [
     {
       name: "Sarika Nair",
     },
   ],
+
   icons: {
-    icon: "/branding/kitchen-brain-icon.png",
-    apple: "/branding/kitchen-brain-icon.png",
+    icon:
+      "/branding/kitchen-brain-icon.png",
+    apple:
+      "/branding/kitchen-brain-icon.png",
   },
 };
 
@@ -51,11 +68,13 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${plusJakartaSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">
+      <body>
         <KitchenProvider>
-          <ToastProvider>{children}</ToastProvider>
+          <ToastProvider>
+            {children}
+          </ToastProvider>
         </KitchenProvider>
       </body>
     </html>

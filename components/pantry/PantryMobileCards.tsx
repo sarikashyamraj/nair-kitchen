@@ -19,6 +19,10 @@ import {
   getIngredientImage,
 } from "../../lib/ingredients/getIngredientImage";
 
+import {
+  typography,
+} from "../../lib/theme/typography";
+
 type PantryMobileCardsProps = {
   items: PantryItem[];
   onEdit: (item: PantryItem) => void;
@@ -33,11 +37,15 @@ export default function PantryMobileCards({
   if (items.length === 0) {
     return (
       <div className="rounded-2xl border border-[#EADCC4] bg-white p-6 text-center shadow-sm md:hidden">
-        <p className="font-bold text-[#2F6B3C]">
+        <p
+          className={`${typography.cardTitle} text-[#2F6B3C]`}
+        >
           No items found
         </p>
 
-        <p className="mt-1 text-sm leading-6 text-gray-500">
+        <p
+          className={`${typography.body} mt-1 text-[#7A746C]`}
+        >
           Try another search, category or sort option.
         </p>
       </div>
@@ -48,70 +56,89 @@ export default function PantryMobileCards({
     <div className="space-y-3 pb-32 md:hidden">
       {items.map((item) => {
         const status =
-          getPantryStockStatus(item);
+          getPantryStockStatus(
+            item
+          );
 
         const statusLabel =
-          getPantryStatusLabel(status);
+          getPantryStatusLabel(
+            status
+          );
 
         const statusClasses =
-          getPantryStatusClasses(status);
+          getPantryStatusClasses(
+            status
+          );
 
         const availableClass =
-          status === "out_of_stock"
-            ? "text-red-700"
-            : status === "low_stock"
-              ? "text-[#C47A00]"
+          status ===
+          "out_of_stock"
+            ? "text-red-600"
+            : status ===
+                "low_stock"
+              ? "text-[#B87516]"
               : "text-[#245B32]";
 
         const imageSrc =
-  getIngredientImage(
-    item.name,
-    item.category
-  );
+          getIngredientImage(
+            item.name,
+            item.category
+          );
 
         return (
           <article
             key={item.id}
-            className="overflow-hidden rounded-2xl border border-[#EADCC4] bg-white shadow-sm"
+            className="overflow-hidden rounded-2xl border border-[#E8DED1] bg-white shadow-sm"
           >
             <div className="p-4">
-              <div className="flex items-start gap-3">
-                {/* Item Image */}
-                <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-2xl border border-[#F0E7DA] bg-[#FAF8F3]">
+              {/* Item Header */}
+              <div className="flex items-start gap-3.5">
+                <div className="relative h-[72px] w-[72px] shrink-0 overflow-hidden rounded-2xl border border-[#F0E7DA] bg-[#FAF8F3]">
                   <Image
                     src={imageSrc}
                     alt={item.name}
                     fill
-                    sizes="64px"
+                    sizes="72px"
                     className="object-cover"
                   />
                 </div>
 
-                {/* Item Name + Status */}
-                <div className="min-w-0 flex-1">
+                <div className="min-w-0 flex-1 pt-0.5">
                   <div className="flex flex-wrap items-center gap-2">
-                    <h3 className="min-w-0 truncate text-lg font-bold text-[#245B32]">
+                    <h3
+                      className={`${typography.itemTitle} min-w-0 truncate text-[#1F5A33]`}
+                    >
                       {item.name}
                     </h3>
 
                     <span
-                      className={`inline-flex shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold ${statusClasses.badge}`}
+                      className={`${typography.badge} inline-flex shrink-0 rounded-full px-2.5 py-1 ${statusClasses.badge}`}
                     >
                       {statusLabel}
                     </span>
                   </div>
+
+                  {item.notes && (
+                    <p
+                      className={`${typography.caption} mt-2 line-clamp-2 text-[#8A8178]`}
+                    >
+                      {item.notes}
+                    </p>
+                  )}
                 </div>
               </div>
 
               {/* Stock Information */}
               <div className="mt-4 grid grid-cols-3 divide-x divide-[#F0E7DA]">
                 <div className="pr-3">
-                  <p className="text-xs text-gray-500">
+                  <p
+                    className={`${typography.label} text-[#938A81]`}
+                  >
                     Available
                   </p>
 
                   <p
-                    className={`mt-1 text-sm font-bold ${availableClass}`}
+                    className={`${typography.bodyMedium} mt-1 ${availableClass}`}
                   >
                     {item.quantity}{" "}
                     {item.unit}
@@ -119,35 +146,36 @@ export default function PantryMobileCards({
                 </div>
 
                 <div className="px-3">
-                  <p className="text-xs text-gray-500">
+                  <p
+                    className={`${typography.label} text-[#938A81]`}
+                  >
                     Minimum
                   </p>
 
-                  <p className="mt-1 text-sm font-bold text-[#5A4032]">
-                    {item.minQuantity}{" "}
+                  <p
+                    className={`${typography.bodyMedium} mt-1 text-[#5A4032]`}
+                  >
+                    {
+                      item.minQuantity
+                    }{" "}
                     {item.unit}
                   </p>
                 </div>
 
                 <div className="pl-3">
-                  <p className="text-xs text-gray-500">
+                  <p
+                    className={`${typography.label} text-[#938A81]`}
+                  >
                     Category
                   </p>
 
-                  <p className="mt-1 truncate text-sm font-bold text-[#5A4032]">
+                  <p
+                    className={`${typography.bodyMedium} mt-1 truncate text-[#5A4032]`}
+                  >
                     {item.category}
                   </p>
                 </div>
               </div>
-
-              {/* Notes */}
-              {item.notes && (
-                <div className="mt-3 rounded-xl bg-[#FAF8F3] px-3 py-2">
-                  <p className="line-clamp-2 text-xs leading-5 text-gray-500">
-                    {item.notes}
-                  </p>
-                </div>
-              )}
             </div>
 
             {/* Actions */}
@@ -157,20 +185,30 @@ export default function PantryMobileCards({
                 onClick={() =>
                   onEdit(item)
                 }
-                className="flex min-h-12 items-center justify-center gap-2 border-r border-[#F0E7DA] text-sm font-semibold text-[#24663A] transition active:bg-green-50"
+                className={`${typography.button} flex min-h-11 items-center justify-center gap-2 border-r border-[#F0E7DA] text-[#2F6B3C] transition hover:bg-[#F7FBF7] active:bg-green-50`}
               >
-                <Pencil size={16} />
+                <Pencil
+                  size={15}
+                  strokeWidth={1.9}
+                />
+
                 Edit
               </button>
 
               <button
                 type="button"
                 onClick={() =>
-                  onDelete(item.id)
+                  onDelete(
+                    item.id
+                  )
                 }
-                className="flex min-h-12 items-center justify-center gap-2 text-sm font-semibold text-red-600 transition active:bg-red-50"
+                className={`${typography.button} flex min-h-11 items-center justify-center gap-2 text-red-600 transition hover:bg-red-50/60 active:bg-red-50`}
               >
-                <Trash2 size={16} />
+                <Trash2
+                  size={15}
+                  strokeWidth={1.9}
+                />
+
                 Delete
               </button>
             </div>

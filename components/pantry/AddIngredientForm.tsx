@@ -1,6 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import {
+  useEffect,
+  useState,
+} from "react";
+
+import {
+  createPortal,
+} from "react-dom";
 
 import { PantryItem } from "../../types/pantry";
 import { UNITS } from "../../constants/units";
@@ -45,8 +52,8 @@ export default function AddIngredientForm({
   ] = useState(
     itemToEdit
       ? String(
-          itemToEdit.quantity
-        )
+        itemToEdit.quantity
+      )
       : ""
   );
 
@@ -60,8 +67,8 @@ export default function AddIngredientForm({
     setCategory,
   ] = useState(
     itemToEdit?.category ??
-      initialCategory ??
-      "Vegetables"
+    initialCategory ??
+    "Vegetables"
   );
 
   const [
@@ -70,8 +77,8 @@ export default function AddIngredientForm({
   ] = useState(
     itemToEdit
       ? String(
-          itemToEdit.minQuantity
-        )
+        itemToEdit.minQuantity
+      )
       : "1"
   );
 
@@ -84,7 +91,14 @@ export default function AddIngredientForm({
     isSaving,
     setIsSaving,
   ] = useState(false);
+const [
+  isMounted,
+  setIsMounted,
+] = useState(false);
 
+useEffect(() => {
+  setIsMounted(true);
+}, []);
   function handleNameChange(
     value: string
   ) {
@@ -142,7 +156,7 @@ export default function AddIngredientForm({
 
     if (
       minQuantity.trim() ===
-        "" ||
+      "" ||
       !Number.isFinite(
         parsedMinimum
       ) ||
@@ -212,9 +226,11 @@ export default function AddIngredientForm({
       setIsSaving(false);
     }
   }
-
+if (!isMounted) {
+  return null;
+}
   return (
-    <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/40 p-0 sm:items-center sm:p-6">
+    <div className="fixed inset-0 z-[9999] flex items-end justify-center bg-black/40 p-0 sm:items-center sm:p-6">
       <div className="flex max-h-[calc(100dvh-1rem)] w-full max-w-md flex-col overflow-hidden rounded-t-3xl bg-white shadow-2xl sm:max-h-[90vh] sm:rounded-3xl">
         {/* Header */}
         <div className="shrink-0 border-b border-[#F4E8D0] bg-white px-5 py-4 sm:px-6">
@@ -228,8 +244,8 @@ export default function AddIngredientForm({
 
               <h2 className="mt-1 text-xl font-bold text-[#2F6B3C] sm:text-2xl">
                 {itemToEdit
-                  ? "Edit Inventory Item"
-                  : "Add Inventory Item"}
+                  ? "Edit Item"
+                  : "Add Item"}
               </h2>
 
               <p className="mt-1 text-sm leading-5 text-gray-500">

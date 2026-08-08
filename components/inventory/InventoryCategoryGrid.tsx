@@ -23,6 +23,10 @@ import {
   inventoryCategoryImages,
 } from "../../lib/inventory/inventoryCategoryImages";
 
+import {
+  typography,
+} from "../../lib/theme/typography";
+
 type InventoryCategoryGridProps = {
   items: PantryItem[];
 
@@ -37,18 +41,24 @@ export default function InventoryCategoryGrid({
 }: InventoryCategoryGridProps) {
   return (
     <section>
-      <div className="mb-3 flex items-end justify-between gap-3">
+      <div className="mb-4 flex items-end justify-between gap-3">
         <div>
-          <h2 className="text-lg font-bold text-[#245B32] sm:text-xl">
+          <h2
+            className={`${typography.sectionTitle} text-[#1F5A33]`}
+          >
             Categories
           </h2>
 
-          <p className="mt-1 text-xs text-gray-500 sm:text-sm">
+          <p
+            className={`${typography.pageDescription} mt-1 text-[#7A746C]`}
+          >
             Browse your home inventory by category.
           </p>
         </div>
 
-        <span className="shrink-0 rounded-full bg-[#F8F4EC] px-2.5 py-1 text-[11px] font-semibold text-gray-500">
+        <span
+          className={`${typography.badge} shrink-0 rounded-full bg-[#F8F4EC] px-2.5 py-1 font-medium text-[#8B8177]`}
+        >
           {inventoryCategoryMeta.length} total
         </span>
       </div>
@@ -81,28 +91,33 @@ export default function InventoryCategoryGrid({
                 {/* Image */}
                 <div className="relative h-28 overflow-hidden bg-[#F8F4EC]">
                   <Image
-  src={image}
-  alt={category.label}
-  fill
-  sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-  className="object-cover object-[center_15%] transition duration-300 group-hover:scale-[1.03]"
-/>
+                    src={image}
+                    alt={category.label}
+                    fill
+                    sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                    className="object-cover object-[center_15%] transition duration-300 group-hover:scale-[1.03]"
+                  />
 
-                  <div className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-white/90 shadow-sm">
+                  <div className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-white/90 shadow-sm backdrop-blur-sm">
                     <ChevronRight
-                      size={16}
-                      className="text-[#245B32]"
+                      size={15}
+                      strokeWidth={1.8}
+                      className="text-[#2F6B3C]"
                     />
                   </div>
                 </div>
 
                 {/* Details */}
-                <div className="p-3">
-                  <h3 className="truncate font-bold text-[#245B32]">
+                <div className="p-3.5">
+                  <h3
+                    className={`${typography.cardTitle} truncate text-[#1F5A33]`}
+                  >
                     {category.label}
                   </h3>
 
-                  <p className="mt-1 text-xs text-gray-500">
+                  <p
+                    className={`${typography.caption} mt-1 text-[#8A8178]`}
+                  >
                     {summary.totalItems}{" "}
                     {summary.totalItems ===
                     1
@@ -110,12 +125,15 @@ export default function InventoryCategoryGrid({
                       : "items"}
                   </p>
 
-                  <div className="mt-2 min-h-5">
+                  <div className="mt-2.5 min-h-5">
                     {summary.outOfStock >
                     0 ? (
-                      <div className="flex items-center gap-1.5 text-[11px] font-semibold text-red-600">
+                      <div
+                        className={`${typography.caption} flex items-center gap-1.5 font-medium text-red-600`}
+                      >
                         <CircleAlert
-                          size={13}
+                          size={12}
+                          strokeWidth={1.9}
                         />
 
                         <span>
@@ -127,9 +145,12 @@ export default function InventoryCategoryGrid({
                       </div>
                     ) : summary.lowStock >
                       0 ? (
-                      <div className="flex items-center gap-1.5 text-[11px] font-semibold text-[#C47A00]">
+                      <div
+                        className={`${typography.caption} flex items-center gap-1.5 font-medium text-[#B87516]`}
+                      >
                         <CircleAlert
-                          size={13}
+                          size={12}
+                          strokeWidth={1.9}
                         />
 
                         <span>
@@ -141,9 +162,12 @@ export default function InventoryCategoryGrid({
                       </div>
                     ) : summary.totalItems >
                       0 ? (
-                      <div className="flex items-center gap-1.5 text-[11px] font-semibold text-green-700">
+                      <div
+                        className={`${typography.caption} flex items-center gap-1.5 font-medium text-[#2F7A49]`}
+                      >
                         <CircleCheck
-                          size={13}
+                          size={12}
+                          strokeWidth={1.9}
                         />
 
                         <span>
@@ -151,7 +175,9 @@ export default function InventoryCategoryGrid({
                         </span>
                       </div>
                     ) : (
-                      <span className="text-[11px] font-medium text-gray-400">
+                      <span
+                        className={`${typography.caption} text-[#AAA39B]`}
+                      >
                         No items yet
                       </span>
                     )}

@@ -1,12 +1,16 @@
 "use client";
-
+import {
+  Share2,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import {
   deleteCloudGroceryItems,
   loadCloudGrocery,
   } from "../../services/groceryService";
 import { saveCloudPantryItem } from "../../services/pantryService";
-
+import {
+  shareGroceryList,
+} from "../../lib/grocery/groceryShare";
 import { useToast } from "../../context/ToastContext";
 import AppLayout from "../../components/AppLayout";
 import Toast from "../../components/common/Toast";
@@ -168,7 +172,49 @@ setShopping(cloudGrocery);
     setEditingItem(null);
     setIsFormOpen(true);
   }
+async function handleShareGrocery() {
+  const result =
+    await shareGroceryList(
+      shopping
+    );
 
+  if (
+    result.method ===
+    "empty"
+  ) {
+    showAppToast({
+      type: "info",
+      message:
+        "There are no remaining grocery items to share.",
+    });
+
+    return;
+  }
+
+  if (
+    result.method ===
+    "clipboard"
+  ) {
+    showAppToast({
+      type: "success",
+      message:
+        "Grocery list copied. You can paste it into WhatsApp, Notes or email.",
+    });
+
+    return;
+  }
+
+  if (
+    result.method ===
+    "unsupported"
+  ) {
+    showAppToast({
+      type: "error",
+      message:
+        "Sharing is not supported on this device.",
+    });
+  }
+}
   function handleFinishShopping() {
     if (purchasedItems.length === 0) {
       showToast(
@@ -344,21 +390,36 @@ setShopping(cloudGrocery);
         {/* Desktop Header */}
         <div className="hidden md:block">
           <ShoppingHeader
-            onAdd={openAddForm}
-            onFinishShopping={handleFinishShopping}
-            searchTerm={searchTerm}
-            setSearchTerm={setSearchTerm}
-            selectedCategory={selectedCategory}
-            setSelectedCategory={setSelectedCategory}
-          />
+  onAdd={openAddForm}
+  onFinishShopping={handleFinishShopping}
+  onShare={handleShareGrocery}
+  remainingItems={notPurchasedItems.length}
+  searchTerm={searchTerm}
+  setSearchTerm={setSearchTerm}
+  selectedCategory={selectedCategory}
+  setSelectedCategory={setSelectedCategory}
+/>
         </div>
+{/* Mobile Share Grocery */}
+<button
+  type="button"
+  onClick={handleShareGrocery}
+  disabled={
+    notPurchasedItems.length === 0
+  }
+  className="flex w-full items-center justify-center gap-2 rounded-xl border border-[#2F6B3C] bg-white px-4 py-3 font-semibold text-[#2F6B3C] shadow-sm transition active:bg-[#F3F8F4] disabled:cursor-not-allowed disabled:border-gray-200 disabled:text-gray-400 disabled:shadow-none md:hidden"
+>
+  <Share2 size={18} />
 
+  Share Grocery List
+</button>
         {/* Mobile Complete Shopping */}
         <button
           type="button"
           onClick={handleFinishShopping}
           className="w-full rounded-xl bg-[#D89B3C] px-4 py-3 font-semibold text-white shadow-sm md:hidden"
         >
+          
           ✅ Complete Shopping
         </button>
 

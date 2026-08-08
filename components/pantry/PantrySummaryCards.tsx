@@ -6,6 +6,10 @@ import {
   ChevronRight,
 } from "lucide-react";
 
+import {
+  typography,
+} from "../../lib/theme/typography";
+
 export type PantrySummaryFilter =
   | "all"
   | "in_stock"
@@ -34,14 +38,16 @@ export default function PantrySummaryCards({
     {
       label: "Total Items",
       value: totalItems,
-      filter: "all" as PantrySummaryFilter,
+      filter:
+        "all" as PantrySummaryFilter,
+
       icon: Archive,
 
       cardClass:
-        "border-[#DCE7E3] bg-white",
+        "border-[#E6E0D7] bg-white",
 
       iconClass:
-        "bg-[#E5F3EC] text-[#2F6B3C]",
+        "bg-[#EEF5F0] text-[#2F6B3C]",
 
       valueClass:
         "text-[#245B32]",
@@ -50,12 +56,14 @@ export default function PantrySummaryCards({
     {
       label: "In Stock",
       value: inStock,
+
       filter:
         "in_stock" as PantrySummaryFilter,
+
       icon: CheckCircle2,
 
       cardClass:
-        "border-green-200 bg-green-50/70",
+        "border-green-100 bg-[#F7FBF7]",
 
       iconClass:
         "bg-green-100 text-green-700",
@@ -67,35 +75,39 @@ export default function PantrySummaryCards({
     {
       label: "Running Low",
       value: lowStock,
+
       filter:
         "low_stock" as PantrySummaryFilter,
+
       icon: ArrowDown,
 
       cardClass:
-        "border-yellow-200 bg-yellow-50/70",
+        "border-amber-100 bg-[#FFF9EF]",
 
       iconClass:
-        "bg-yellow-100 text-yellow-700",
+        "bg-amber-100 text-[#B87516]",
 
       valueClass:
-        "text-[#C47A00]",
+        "text-[#B87516]",
     },
 
     {
       label: "Out of Stock",
       value: outOfStock,
+
       filter:
         "out_of_stock" as PantrySummaryFilter,
+
       icon: AlertCircle,
 
       cardClass:
-        "border-red-200 bg-red-50/70",
+        "border-red-100 bg-[#FFF7F6]",
 
       iconClass:
-        "bg-red-100 text-red-700",
+        "bg-red-100 text-red-600",
 
       valueClass:
-        "text-red-700",
+        "text-red-600",
     },
   ];
 
@@ -124,27 +136,31 @@ export default function PantrySummaryCards({
                 className={`mx-auto flex h-8 w-8 items-center justify-center rounded-full ${metric.iconClass}`}
               >
                 <Icon
-                  size={16}
+                  size={15}
+                  strokeWidth={1.9}
                 />
               </div>
 
-              <p className="mt-2 min-h-8 text-[9px] font-semibold leading-4 text-[#5A4032] sm:min-h-0 sm:text-sm">
+              <p
+                className={`${typography.caption} mt-2 min-h-8 font-medium text-[#6F675F] sm:min-h-0`}
+              >
                 {metric.label}
               </p>
 
               <p
-                className={`mt-1 text-xl font-bold sm:text-2xl ${metric.valueClass}`}
+                className={`${typography.stat} mt-1 ${metric.valueClass}`}
               >
                 {metric.value}
               </p>
 
-              <div className="mt-1 flex items-center justify-center gap-0.5 text-[9px] font-semibold text-gray-400 transition group-hover:text-[#2F6B3C] sm:mt-2 sm:text-xs">
+              <div className="mt-1.5 flex items-center justify-center gap-0.5 text-[9.5px] font-medium text-[#AAA39B] transition group-hover:text-[#2F6B3C] sm:mt-2">
                 <span>
                   View
                 </span>
 
                 <ChevronRight
-                  size={12}
+                  size={11}
+                  strokeWidth={1.8}
                 />
               </div>
             </button>

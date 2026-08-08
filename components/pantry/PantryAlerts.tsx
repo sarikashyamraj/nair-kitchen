@@ -1,132 +1,164 @@
+import {
+  AlertCircle,
+  CircleAlert,
+} from "lucide-react";
+
 import { PantryItem } from "../../types/pantry";
 import { analyzePantry } from "../../lib/pantry/pantryAnalyzer";
+import { typography } from "../../lib/theme/typography";
 
 type PantryAlertsProps = {
   items: PantryItem[];
 };
 
-function ItemPreview({
-  items,
-  total,
-}: {
-  items: PantryItem[];
-  total: number;
-}) {
-  const visibleItems = items.slice(0, 2);
-  const remaining =
-    total - visibleItems.length;
+function getAttentionStatus(
+  item: PantryItem
+) {
+  if (item.quantity <= 0) {
+    return {
+      label: "Out of Stock",
+      className:
+        "bg-red-50 text-red-600",
+    };
+  }
 
-  return (
-    <div className="mt-2 space-y-1">
-      {visibleItems.map((item) => (
-        <p
-          key={item.id}
-          className="text-sm font-medium text-[#5A4032]"
-        >
-          • {item.name}
-        </p>
-      ))}
-
-      {remaining > 0 && (
-        <p className="text-sm font-semibold text-gray-500">
-          +{remaining} more
-        </p>
-      )}
-    </div>
-  );
+  return {
+    label: "Running Low",
+    className:
+      "bg-amber-50 text-[#A86612]",
+  };
 }
 
 export default function PantryAlerts({
   items,
 }: PantryAlertsProps) {
-  const summary = analyzePantry(items);
+  const summary =
+    analyzePantry(items);
 
   if (
     summary.outOfStock === 0 &&
     summary.lowStock === 0
   ) {
     return (
-      <section className="mb-4 rounded-2xl border border-green-200 bg-green-50 px-4 py-4 shadow-sm">
-        <p className="font-bold text-green-800">
-          ✅ Pantry is well stocked
-        </p>
+      <section className="mb-5 rounded-2xl border border-green-100 bg-[#F6FBF7] p-4 shadow-sm">
+        <div className="flex items-start gap-3">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-green-100 text-green-700">
+            <AlertCircle
+              size={17}
+              strokeWidth={1.9}
+            />
+          </div>
 
-        <p className="mt-1 text-sm text-green-700">
-          Everything is above minimum stock.
-        </p>
+          <div>
+            <h2
+              className={`${typography.sectionTitle} text-[#245B32]`}
+            >
+              Inventory looks good
+            </h2>
+
+            <p
+              className={`${typography.body} mt-1 text-[#6F756F]`}
+            >
+              Everything is above minimum stock.
+            </p>
+          </div>
+        </div>
       </section>
     );
   }
 
-  return (
-    <section className="mb-4 rounded-2xl border border-red-200 bg-gradient-to-br from-red-50 to-white p-4 shadow-sm sm:p-5">
-      <div className="flex items-center justify-between gap-3">
-        <h2 className="font-bold text-red-800 sm:text-lg">
-          🚨 Needs Attention
-        </h2>
+  const visibleItems =
+    summary.attentionItems.slice(
+      0,
+      3
+    );
 
-        <span className="rounded-full bg-red-100 px-2.5 py-1 text-xs font-bold text-red-700">
-          {summary.attentionItems.length}
+  const remainingCount =
+    summary.attentionItems.length -
+    visibleItems.length;
+
+  return (
+    <section className="mb-5 rounded-2xl border border-[#F2D9D7] bg-[#FFF9F8] p-4 shadow-sm">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2.5">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-red-50 text-red-600">
+            <CircleAlert
+              size={16}
+              strokeWidth={2}
+            />
+          </div>
+
+          <div>
+            <h2
+              className={`${typography.sectionTitle} text-[#7A2F2B]`}
+            >
+              Needs Attention
+            </h2>
+
+            <p
+              className={`${typography.caption} mt-0.5 text-[#9A7E7B]`}
+            >
+              Items that may need restocking
+            </p>
+          </div>
+        </div>
+
+        <span
+          className={`${typography.badge} rounded-full bg-red-50 px-2.5 py-1 text-red-600`}
+        >
+          {
+            summary.attentionItems
+              .length
+          }
         </span>
       </div>
 
-      <div className="mt-4 grid grid-cols-2 gap-4">
-        <div className="border-r border-red-100 pr-3">
-          <div className="flex items-center gap-2">
-            <span
-              aria-hidden="true"
-              className="h-2.5 w-2.5 rounded-full bg-red-500"
-            />
+      <div className="mt-4 divide-y divide-[#F2E2DF] rounded-xl border border-[#F2E2DF] bg-white/70">
+        {visibleItems.map(
+          (item) => {
+            const status =
+              getAttentionStatus(
+                item
+              );
 
-            <p className="text-sm font-bold text-red-700">
-              Out of Stock ({summary.outOfStock})
-            </p>
-          </div>
+            return (
+              <div
+                key={item.id}
+                className="flex items-center justify-between gap-3 px-3 py-3"
+              >
+                <div className="min-w-0">
+                  <p
+                    className={`${typography.bodyMedium} truncate text-[#4E463F]`}
+                  >
+                    {item.name}
+                  </p>
 
-          {summary.outOfStock > 0 ? (
-            <ItemPreview
-              items={
-                summary.outOfStockItems
-              }
-              total={
-                summary.outOfStock
-              }
-            />
-          ) : (
-            <p className="mt-2 text-xs text-gray-400">
-              None
-            </p>
-          )}
-        </div>
+                  <p
+                    className={`${typography.caption} mt-0.5 text-[#8A8178]`}
+                  >
+                    {item.quantity}{" "}
+                    {item.unit} available
+                  </p>
+                </div>
 
-        <div className="pl-1">
-          <div className="flex items-center gap-2">
-            <span
-              aria-hidden="true"
-              className="h-2.5 w-2.5 rounded-full bg-yellow-500"
-            />
-
-            <p className="text-sm font-bold text-[#B66A00]">
-              Running Low ({summary.lowStock})
-            </p>
-          </div>
-
-          {summary.lowStock > 0 ? (
-            <ItemPreview
-              items={
-                summary.lowStockItems
-              }
-              total={
-                summary.lowStock
-              }
-            />
-          ) : (
-            <p className="mt-2 text-xs text-gray-400">
-              None
-            </p>
-          )}
-        </div>
+                <span
+                  className={`${typography.badge} shrink-0 rounded-full px-2.5 py-1 ${status.className}`}
+                >
+                  {status.label}
+                </span>
+              </div>
+            );
+          }
+        )}
       </div>
+
+      {remainingCount > 0 && (
+        <p
+          className={`${typography.caption} mt-3 text-center font-medium text-[#8C837A]`}
+        >
+          +{remainingCount} more items need attention
+        </p>
+      )}
     </section>
   );
 }
