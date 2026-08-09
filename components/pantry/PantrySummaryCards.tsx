@@ -1,9 +1,9 @@
 import {
-  AlertCircle,
-  Archive,
-  ArrowDown,
-  CheckCircle2,
+  BadgeCheck,
   ChevronRight,
+  PackageOpen,
+  PackageX,
+  TrendingDown,
 } from "lucide-react";
 
 import {
@@ -41,7 +41,7 @@ export default function PantrySummaryCards({
       filter:
         "all" as PantrySummaryFilter,
 
-      icon: Archive,
+      icon: PackageOpen,
 
       cardClass:
         "border-[#E6E0D7] bg-white",
@@ -60,7 +60,7 @@ export default function PantrySummaryCards({
       filter:
         "in_stock" as PantrySummaryFilter,
 
-      icon: CheckCircle2,
+      icon: BadgeCheck,
 
       cardClass:
         "border-green-100 bg-[#F7FBF7]",
@@ -79,7 +79,7 @@ export default function PantrySummaryCards({
       filter:
         "low_stock" as PantrySummaryFilter,
 
-      icon: ArrowDown,
+      icon: TrendingDown,
 
       cardClass:
         "border-amber-100 bg-[#FFF9EF]",
@@ -98,7 +98,7 @@ export default function PantrySummaryCards({
       filter:
         "out_of_stock" as PantrySummaryFilter,
 
-      icon: AlertCircle,
+      icon: PackageX,
 
       cardClass:
         "border-red-100 bg-[#FFF7F6]",
@@ -112,7 +112,7 @@ export default function PantrySummaryCards({
   ];
 
   return (
-    <section className="mb-5 grid grid-cols-4 gap-2 sm:gap-3">
+    <section className="mb-4 grid grid-cols-4 gap-2 sm:gap-3">
       {metrics.map(
         (metric) => {
           const Icon =
@@ -130,19 +130,19 @@ export default function PantrySummaryCards({
                 )
               }
               aria-label={`View ${metric.label}`}
-              className={`group rounded-2xl border px-2 py-3 text-center shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-md active:scale-[0.98] sm:px-4 sm:py-4 ${metric.cardClass}`}
+              className={`group rounded-2xl border px-2 py-2.5 text-center shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-md active:scale-[0.98] sm:px-4 sm:py-3 ${metric.cardClass}`}
             >
               <div
-                className={`mx-auto flex h-8 w-8 items-center justify-center rounded-full ${metric.iconClass}`}
-              >
-                <Icon
-                  size={15}
-                  strokeWidth={1.9}
-                />
-              </div>
+  className={`mx-auto flex h-9 w-9 items-center justify-center rounded-full ${metric.iconClass}`}
+>
+  <Icon
+    size={19}
+    strokeWidth={1.8}
+  />
+</div>
 
               <p
-                className={`${typography.caption} mt-2 min-h-8 font-medium text-[#6F675F] sm:min-h-0`}
+                className={`${typography.caption} mt-1.5 min-h-8 font-medium leading-4 text-[#6F675F] sm:min-h-0`}
               >
                 {metric.label}
               </p>
@@ -153,7 +153,7 @@ export default function PantrySummaryCards({
                 {metric.value}
               </p>
 
-              <div className="mt-1.5 flex items-center justify-center gap-0.5 text-[9.5px] font-medium text-[#AAA39B] transition group-hover:text-[#2F6B3C] sm:mt-2">
+              <div className="mt-1 flex items-center justify-center gap-0.5 text-[9.5px] font-medium text-[#AAA39B] transition group-hover:text-[#2F6B3C] sm:mt-1.5">
                 <span>
                   View
                 </span>

@@ -4,10 +4,13 @@ import Image from "next/image";
 
 import {
   ArrowLeft,
+  BadgeCheck,
   CircleAlert,
   CircleCheck,
+  PackageX,
   Plus,
   Search,
+  TrendingDown,
 } from "lucide-react";
 
 import { PantryItem } from "../../types/pantry";
@@ -214,49 +217,73 @@ export default function InventoryCategoryView({
       </section>
 
       {/* Stock Overview */}
-      <section className="grid grid-cols-3 gap-2">
-        <div className="rounded-xl border border-green-100 bg-[#F7FBF7] px-2 py-3 text-center">
-          <p
-            className={`${typography.stat} text-green-700`}
-          >
-            {summary.inStock}
-          </p>
+<section className="grid grid-cols-3 gap-2">
+  {/* In Stock */}
+  <div className="rounded-xl border border-green-100 bg-[#F7FBF7] px-2 py-3 text-center">
+    <div className="mx-auto flex h-8 w-8 items-center justify-center rounded-full bg-green-100 text-green-700">
+      <BadgeCheck
+        size={17}
+        strokeWidth={1.8}
+      />
+    </div>
 
-          <p
-            className={`${typography.caption} mt-1 font-medium text-green-700`}
-          >
-            In Stock
-          </p>
-        </div>
+    <p
+      className={`${typography.stat} mt-1.5 text-green-700`}
+    >
+      {summary.inStock}
+    </p>
 
-        <div className="rounded-xl border border-amber-100 bg-[#FFF9EF] px-2 py-3 text-center">
-          <p
-            className={`${typography.stat} text-[#B87516]`}
-          >
-            {summary.lowStock}
-          </p>
+    <p
+      className={`${typography.caption} mt-0.5 font-medium text-green-700`}
+    >
+      In Stock
+    </p>
+  </div>
 
-          <p
-            className={`${typography.caption} mt-1 font-medium text-[#B87516]`}
-          >
-            Running Low
-          </p>
-        </div>
+  {/* Running Low */}
+  <div className="rounded-xl border border-amber-100 bg-[#FFF9EF] px-2 py-3 text-center">
+    <div className="mx-auto flex h-8 w-8 items-center justify-center rounded-full bg-amber-100 text-[#B87516]">
+      <TrendingDown
+        size={17}
+        strokeWidth={1.8}
+      />
+    </div>
 
-        <div className="rounded-xl border border-red-100 bg-[#FFF7F6] px-2 py-3 text-center">
-          <p
-            className={`${typography.stat} text-red-600`}
-          >
-            {summary.outOfStock}
-          </p>
+    <p
+      className={`${typography.stat} mt-1.5 text-[#B87516]`}
+    >
+      {summary.lowStock}
+    </p>
 
-          <p
-            className={`${typography.caption} mt-1 font-medium text-red-600`}
-          >
-            Out of Stock
-          </p>
-        </div>
-      </section>
+    <p
+      className={`${typography.caption} mt-0.5 font-medium text-[#B87516]`}
+    >
+      Running Low
+    </p>
+  </div>
+
+  {/* Out of Stock */}
+  <div className="rounded-xl border border-red-100 bg-[#FFF7F6] px-2 py-3 text-center">
+    <div className="mx-auto flex h-8 w-8 items-center justify-center rounded-full bg-red-100 text-red-600">
+      <PackageX
+        size={17}
+        strokeWidth={1.8}
+      />
+    </div>
+
+    <p
+      className={`${typography.stat} mt-1.5 text-red-600`}
+    >
+      {summary.outOfStock}
+    </p>
+
+    <p
+      className={`${typography.caption} mt-0.5 font-medium text-red-600`}
+    >
+      Out of Stock
+    </p>
+  </div>
+</section>
 
       {/* Items */}
       <div>

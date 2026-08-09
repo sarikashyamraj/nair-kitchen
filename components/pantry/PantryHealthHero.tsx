@@ -1,3 +1,5 @@
+import Image from "next/image";
+
 import {
   typography,
 } from "../../lib/theme/typography";
@@ -125,49 +127,56 @@ export default function PantryHealthHero({
     );
 
   return (
-    <section className="mb-5 rounded-2xl border border-green-100 bg-[#F8FCF8] p-4 shadow-sm sm:p-5">
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex min-w-0 items-start gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#EAF4E9] text-xl">
-            🥗
-          </div>
-
-          <div className="min-w-0">
-            <h2
-              className={`${typography.cardTitle} text-[#245B32]`}
-            >
-              Inventory Health
-            </h2>
-
-            <p
-              className={`${typography.bodyMedium} mt-1 ${presentation.accentClass}`}
-            >
-              {presentation.label}
-            </p>
-          </div>
+  <section className="mb-4 rounded-2xl border border-green-100 bg-[#F8FCF8] px-4 py-3.5 shadow-sm sm:p-4">
+    <div className="flex items-start justify-between gap-4">
+      <div className="flex min-w-0 items-start gap-3">
+        <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-full border border-[#E3EBDD] bg-[#F4F8F2] shadow-sm">
+          <Image
+            src="/inventory/inventory-health.png"
+            alt="Kitchen inventory"
+            fill
+            sizes="44px"
+            className="object-cover"
+            priority
+          />
         </div>
 
-        <p
-          className={`${typography.heroStat} shrink-0 text-[#245B32]`}
-        >
-          {pantryHealth}%
-        </p>
+        <div className="min-w-0">
+          <h2
+            className={`${typography.cardTitle} text-[#245B32]`}
+          >
+            Inventory Health
+          </h2>
+
+          <p
+            className={`${typography.bodyMedium} mt-0.5 ${presentation.accentClass}`}
+          >
+            {presentation.label}
+          </p>
+        </div>
       </div>
 
       <p
-        className={`${typography.body} mt-4 text-[#626A64]`}
+        className={`${typography.heroStat} shrink-0 text-[#245B32]`}
       >
-        {presentation.message}
+        {pantryHealth}%
       </p>
+    </div>
 
-      <div className="mt-4 h-2 overflow-hidden rounded-full bg-[#E4EEE2]">
-        <div
-          className={`h-full rounded-full transition-all duration-500 ${presentation.progressClass}`}
-          style={{
-            width: `${progressWidth}%`,
-          }}
-        />
-      </div>
-    </section>
-  );
+    <p
+      className={`${typography.body} mt-3 text-[#626A64]`}
+    >
+      {presentation.message}
+    </p>
+
+    <div className="mt-3 h-2 overflow-hidden rounded-full bg-[#E4EEE2]">
+      <div
+        className={`h-full rounded-full transition-all duration-500 ${presentation.progressClass}`}
+        style={{
+          width: `${progressWidth}%`,
+        }}
+      />
+    </div>
+  </section>
+);
 }

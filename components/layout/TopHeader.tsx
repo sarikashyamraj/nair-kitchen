@@ -7,7 +7,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { Bell } from "lucide-react";
+import { BellRing } from "lucide-react";
 
 import { useKitchen } from "../../context/KitchenContext";
 
@@ -453,28 +453,30 @@ export default function TopHeader() {
             className="relative"
           >
             <button
-              type="button"
-              aria-label="Notifications"
-              aria-expanded={
-                isNotificationsOpen
-              }
-              onClick={() =>
-                setIsNotificationsOpen(
-                  (currentValue) =>
-                    !currentValue
-                )
-              }
-              className="relative rounded-xl p-2 transition hover:bg-[#F4E8D0] sm:p-3"
-            >
-              <Bell size={21} />
+  type="button"
+  aria-label="Notifications"
+  aria-expanded={
+    isNotificationsOpen
+  }
+  onClick={() =>
+    setIsNotificationsOpen(
+      (currentValue) =>
+        !currentValue
+    )
+  }
+  className="relative flex h-10 w-10 items-center justify-center rounded-full border border-[#E3EBDD] bg-[#F3F8F1] text-[#245B32] shadow-sm transition duration-200 hover:border-[#CFE0CB] hover:bg-[#EAF4E9] active:scale-[0.96] sm:h-11 sm:w-11"
+>
+  <BellRing
+    size={20}
+    strokeWidth={1.9}
+  />
 
-              {notificationCount >
-                0 && (
-                <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-[#D89B3C] px-1 text-[10px] font-bold text-white">
-                  {notificationCount}
-                </span>
-              )}
-            </button>
+  {notificationCount > 0 && (
+    <span className="absolute -right-1 -top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full border-2 border-white bg-[#D89B3C] px-1 text-[9px] font-bold leading-none text-white shadow-sm">
+      {notificationCount}
+    </span>
+  )}
+</button>
 
             {isNotificationsOpen && (
               <div className="absolute right-0 top-full z-50 mt-2 w-[300px] overflow-hidden rounded-2xl border border-[#EADCC4] bg-white shadow-xl sm:w-[340px]">
