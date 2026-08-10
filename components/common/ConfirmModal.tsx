@@ -1,5 +1,5 @@
 "use client";
-
+import Image from "next/image";
 import { useEffect, useState } from "react";
 
 interface ConfirmModalProps {
@@ -20,7 +20,9 @@ interface ConfirmModalProps {
   confirmationLabel?: string;
 
   details?: string[];
-  icon?: string;
+icon?: string;
+imageSrc?: string;
+showWarning?: boolean;
 }
 
 export default function ConfirmModal({
@@ -36,7 +38,9 @@ export default function ConfirmModal({
   requiredConfirmationText,
   confirmationLabel,
   details = [],
-  icon = "🗑️",
+icon = "🗑️",
+imageSrc,
+showWarning = true,
 }: ConfirmModalProps) {
   const [confirmationInput, setConfirmationInput] = useState("");
 
@@ -90,9 +94,21 @@ export default function ConfirmModal({
     >
       <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
         <div className="flex items-start gap-3">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-red-100 text-xl">
-            {icon}
-          </div>
+          {imageSrc ? (
+  <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-xl border border-[#EADCC4] bg-[#FAF8F3]">
+    <Image
+      src={imageSrc}
+      alt=""
+      fill
+      sizes="48px"
+      className="object-cover"
+    />
+  </div>
+) : (
+  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-red-100 text-xl">
+    {icon}
+  </div>
+)}
 
           <div>
             <h2
@@ -154,9 +170,11 @@ export default function ConfirmModal({
           </div>
         )}
 
-        <p className="mt-5 text-sm font-semibold text-red-600">
-          This action cannot be undone.
-        </p>
+        {showWarning && (
+  <p className="mt-5 text-sm font-semibold text-red-600">
+    This action cannot be undone.
+  </p>
+)}
 
         <div className="mt-7 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
           <button

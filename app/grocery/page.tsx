@@ -367,9 +367,10 @@ async function handleShareGrocery() {
 }
   return (
     <AppLayout>
-      <div className="space-y-6">
+      <div className="space-y-6 pb-28 md:pb-0">
         {/* Sticky Mobile Header and Search */}
-        <div className="sticky top-0 z-30 -mx-4 bg-[#FFFDF8] px-4 pb-3 pt-1 md:hidden">
+        {/* Mobile Header and Search */}
+<div className="-mx-4 bg-[#FFFDF8] px-4 pb-3 pt-1 md:hidden">
           <MobilePageHeader
             title="Grocery"
             subtitle={`${notPurchasedItems.length} Items Remaining`}

@@ -1,18 +1,22 @@
 "use client";
 import {
+  getIngredientImage,
+} from "../../lib/ingredients/getIngredientImage";
+import {
   mergeInventoryItemsIntoGrocery,
 } from "../../services/inventoryToGrocery";
 import {
   useMemo,
   useState,
 } from "react";
-
+import ConfirmModal from "../../components/common/ConfirmModal";
 import {
   ArrowLeft,
   BadgeCheck,
   PackageOpen,
   PackageX,
   Plus,
+  ScanBarcode,
   Search,
   TrendingDown,
 } from "lucide-react";
@@ -46,7 +50,9 @@ import {
   deleteCloudPantryItem,
   saveCloudPantryItem,
 } from "../../services/pantryService";
-
+import {
+  saveCloudGroceryItem,
+} from "../../services/groceryService";
 import {
   analyzePantry,
 } from "../../lib/pantry/pantryAnalyzer";
@@ -90,7 +96,12 @@ export default function PantryPage() {
     useState<PantryItem | null>(
       null
     );
-
+const [
+  itemToDelete,
+  setItemToDelete,
+] = useState<PantryItem | null>(
+  null
+);
   const [
     searchTerm,
     setSearchTerm,
@@ -318,7 +329,8 @@ async function handleAddSummaryToGrocery() {
   if (summaryItems.length === 0) {
     showToast({
       type: "warning",
-      message: "There are no items to add to Grocery.",
+      message:
+        "There are no items to add to Grocery.",
     });
 
     return;
@@ -326,12 +338,52 @@ async function handleAddSummaryToGrocery() {
 
   try {
     const result =
-      await mergeInventoryItemsIntoGrocery(
+      mergeInventoryItemsIntoGrocery(
         summaryItems,
         shopping
       );
 
-    setShopping(result.shopping);
+    /*
+     * Persist every Grocery item
+     * created or updated by the
+     * Inventory merge.
+     */
+    const savedItems =
+      await Promise.all(
+        result.itemsToSave.map(
+          (item) =>
+            saveCloudGroceryItem(
+              item
+            )
+        )
+      );
+
+    /*
+     * Replace locally generated
+     * versions with the versions
+     * returned by Supabase.
+     */
+    const savedItemsById =
+      new Map(
+        savedItems.map(
+          (item) => [
+            item.id,
+            item,
+          ]
+        )
+      );
+
+    const persistedShopping =
+      result.shopping.map(
+        (item) =>
+          savedItemsById.get(
+            item.id
+          ) ?? item
+      );
+
+    setShopping(
+      persistedShopping
+    );
 
     showToast({
       type: "success",
@@ -503,7 +555,21 @@ async function handleAddSummaryToGrocery() {
       });
     }
   }
+function requestDelete(
+  id: string
+) {
+  const item =
+    pantry.find(
+      (pantryItem) =>
+        pantryItem.id === id
+    );
 
+  if (!item) {
+    return;
+  }
+
+  setItemToDelete(item);
+}
   if (!isKitchenLoaded) {
     return (
       <AppLayout>
@@ -552,8 +618,8 @@ async function handleAddSummaryToGrocery() {
               openEditForm
             }
             onDelete={
-              handleDelete
-            }
+  requestDelete
+}
           />
         ) : activeSummaryFilter ? (
           <InventorySummaryView
@@ -573,8 +639,8 @@ async function handleAddSummaryToGrocery() {
     openEditForm
   }
   onDelete={
-    handleDelete
-  }
+  requestDelete
+}
 />
           
         ) : (
@@ -595,10 +661,10 @@ async function handleAddSummaryToGrocery() {
     </h1>
 
     <p
-      className={`${typography.pageDescription} mt-1 text-[#7A746C]`}
-    >
-      Manage everything your home needs.
-    </p>
+  className={`${typography.pageDescription} mt-1 mb-3 text-[#7A746C]`}
+>
+  Manage everything your home needs.
+</p>
   </div>
 
   <button
@@ -649,8 +715,8 @@ async function handleAddSummaryToGrocery() {
                     openEditForm
                   }
                   onDelete={
-                    handleDelete
-                  }
+  requestDelete
+}
                 />
               </>
             ) : (
@@ -710,14 +776,29 @@ async function handleAddSummaryToGrocery() {
         )}
       </div>
 
-      {/* Mobile Add */}
-      <KBFloatingButton
-        label="Add"
-        ariaLabel="Add inventory item"
-        onClick={
-          openAddForm
-        }
-      />
+      {/* Mobile Inventory Actions */}
+<div className="md:hidden">
+  {/* Primary Add */}
+  <KBFloatingButton
+    label="Add"
+    ariaLabel="Add inventory item"
+    onClick={openAddForm}
+    className="!right-[5.75rem]"
+  />
+
+  {/* Barcode Scan */}
+  <KBFloatingButton
+    label=""
+    ariaLabel="Scan item barcode"
+    icon={ScanBarcode}
+    onClick={() => {
+      window.alert(
+        "Barcode scanning is coming soon."
+      );
+    }}
+    className="!right-4 !min-w-14 !bg-[#D89B3C] !px-0 hover:!bg-[#C8892E]"
+  />
+</div>
 
       {/* Add / Edit Form */}
       {isFormOpen && (
@@ -736,6 +817,44 @@ async function handleAddSummaryToGrocery() {
           }
         />
       )}
+      {/* Delete Confirmation */}
+<ConfirmModal
+  isOpen={itemToDelete !== null}
+  title={
+    itemToDelete
+      ? `Delete ${itemToDelete.name}?`
+      : "Delete Item?"
+  }
+  message=""
+  imageSrc={
+    itemToDelete
+      ? getIngredientImage(
+          itemToDelete.name,
+          itemToDelete.category
+        )
+      : undefined
+  }
+  showWarning={false}
+  confirmText="Yes, Delete"
+  cancelText="Cancel"
+  onCancel={() =>
+    setItemToDelete(null)
+  }
+  onConfirm={async () => {
+    if (!itemToDelete) {
+      return;
+    }
+
+    const itemId =
+      itemToDelete.id;
+
+    setItemToDelete(null);
+
+    await handleDelete(
+      itemId
+    );
+  }}
+/>
     </AppLayout>
   );
 }

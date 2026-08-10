@@ -11,6 +11,7 @@ type KBFloatingButtonProps = {
   icon?: LucideIcon;
   disabled?: boolean;
   ariaLabel?: string;
+  className?: string;
 };
 
 export default function KBFloatingButton({
@@ -19,6 +20,7 @@ export default function KBFloatingButton({
   icon: Icon = Plus,
   disabled = false,
   ariaLabel,
+  className = "",
 }: KBFloatingButtonProps) {
   return (
     <button
@@ -58,6 +60,7 @@ export default function KBFloatingButton({
         // Desktop uses page-specific actions
         // rather than the mobile FAB.
         "md:hidden",
+        className,
       ].join(" ")}
     >
       <Icon
