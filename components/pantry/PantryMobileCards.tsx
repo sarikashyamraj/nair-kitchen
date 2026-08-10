@@ -100,9 +100,19 @@ export default function PantryMobileCards({
                     fill
                     sizes="72px"
                     className="object-cover"
+                    onError={(
+                      event
+                    ) => {
+                      event.currentTarget.srcset =
+                        "";
+
+                      event.currentTarget.src =
+                        "/inventory/inventory-health.png";
+                    }}
                   />
                 </div>
 
+                {/* Item Name + Status */}
                 <div className="min-w-0 flex-1 pt-0.5">
                   <div className="flex flex-wrap items-center gap-2">
                     <h3
@@ -155,9 +165,7 @@ export default function PantryMobileCards({
                   <p
                     className={`${typography.bodyMedium} mt-1 text-[#5A4032]`}
                   >
-                    {
-                      item.minQuantity
-                    }{" "}
+                    {item.minQuantity}{" "}
                     {item.unit}
                   </p>
                 </div>

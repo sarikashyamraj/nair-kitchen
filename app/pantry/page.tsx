@@ -9,8 +9,12 @@ import {
 
 import {
   ArrowLeft,
+  BadgeCheck,
+  PackageOpen,
+  PackageX,
   Plus,
   Search,
+  TrendingDown,
 } from "lucide-react";
 import { typography } from "../../lib/theme/typography";
 import AppLayout from "../../components/AppLayout";
@@ -805,61 +809,132 @@ function InventorySummaryView({
     filter === "low_stock" ||
     filter === "out_of_stock";
 
+  const statusPresentation =
+    filter === "all"
+      ? {
+          icon: PackageOpen,
+          iconClass:
+            "bg-[#EEF5F0] text-[#2F6B3C]",
+        }
+      : filter === "in_stock"
+        ? {
+            icon: BadgeCheck,
+            iconClass:
+              "bg-green-100 text-green-700",
+          }
+        : filter === "low_stock"
+          ? {
+              icon: TrendingDown,
+              iconClass:
+                "bg-amber-100 text-[#B87516]",
+            }
+          : {
+              icon: PackageX,
+              iconClass:
+                "bg-red-100 text-red-600",
+            };
+
+  const StatusIcon =
+    statusPresentation.icon;
+
+  const countLabel =
+    filter === "low_stock"
+      ? `${items.length} ${
+          items.length === 1
+            ? "item"
+            : "items"
+        } need restocking`
+      : filter === "out_of_stock"
+        ? `${items.length} ${
+            items.length === 1
+              ? "item"
+              : "items"
+          } need replenishing`
+        : filter === "in_stock"
+          ? `${items.length} ${
+              items.length === 1
+                ? "item"
+                : "items"
+            } in stock`
+          : `${items.length} ${
+              items.length === 1
+                ? "item"
+                : "items"
+            }`;
+const heroClass =
+  filter === "low_stock"
+    ? "border-amber-100 bg-[#FFFCF5]"
+    : filter === "out_of_stock"
+      ? "border-red-100 bg-[#FFF9F8]"
+      : filter === "in_stock"
+        ? "border-green-100 bg-[#F8FCF8]"
+        : "border-[#E8DED1] bg-white";
   return (
     <div className="space-y-4">
       {/* Back */}
       <button
         type="button"
         onClick={onBack}
-        className="inline-flex min-h-10 items-center gap-2 rounded-xl px-1 text-sm font-semibold text-[#2F6B3C] transition active:scale-[0.98]"
+        className={`${typography.bodyMedium} inline-flex min-h-10 items-center gap-2 rounded-xl px-1 text-[#2F6B3C] transition active:scale-[0.98]`}
       >
         <ArrowLeft
-          size={18}
+          size={17}
+          strokeWidth={1.9}
         />
 
         Home Inventory
       </button>
 
       {/* Summary Header */}
-      <section className="rounded-2xl border border-[#EADCC4] bg-white p-4 shadow-sm sm:p-5">
+      <section
+  className={`rounded-2xl border p-4 shadow-sm sm:p-5 ${heroClass}`}
+>
         <p
           className={`${typography.eyebrow} text-[#C9872F]`}
         >
           Home Inventory
         </p>
 
-        <h1
-          className={`${typography.pageTitle} mt-1 whitespace-nowrap text-[#245B32]`}
-        >
-          {content.title}
-        </h1>
+        <div className="mt-2 flex items-start gap-3">
+          <div
+            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${statusPresentation.iconClass}`}
+          >
+            <StatusIcon
+              size={20}
+              strokeWidth={1.8}
+            />
+          </div>
 
-        <p
-          className={`${typography.pageDescription} mt-1 max-w-md text-[#7A746C]`}
-        >
-          {content.description}
-        </p>
+          <div className="min-w-0">
+            <h1
+              className={`${typography.pageTitle} whitespace-nowrap text-[#245B32]`}
+            >
+              {content.title}
+            </h1>
+
+            <p
+              className={`${typography.pageDescription} mt-1 max-w-md text-[#7A746C]`}
+            >
+              {content.description}
+            </p>
+          </div>
+        </div>
 
         <div className="mt-4 flex items-center justify-between gap-3">
           <span
-            className={`${typography.badge} shrink-0 rounded-full bg-[#F8F4EC] px-3 py-2 font-medium text-[#5A4032]`}
+            className={`${typography.caption} rounded-full bg-[#F8F4EC] px-3 py-2 font-medium text-[#5A4032]`}
           >
-            {items.length}{" "}
-            {items.length === 1
-              ? "Item"
-              : "Items"}
+            {countLabel}
           </span>
 
           {showGroceryAction && (
             <button
               type="button"
-              onClick={
-                onAddToGrocery
-              }
+              onClick={onAddToGrocery}
               disabled={
                 items.length === 0
               }
-              className={`${typography.button} inline-flex min-h-11 items-center justify-center rounded-xl bg-[#2F6B3C] px-4 py-3 text-white shadow-sm transition hover:bg-[#245B32] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50`}
+              className={`${typography.button} inline-flex min-h-11 shrink-0 items-center justify-center rounded-xl bg-[#2F6B3C] px-4 py-3 text-white shadow-sm transition hover:bg-[#245B32] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50`}
             >
               Add All to Grocery
             </button>
