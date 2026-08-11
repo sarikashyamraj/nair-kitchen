@@ -8,6 +8,7 @@ import {
 interface BottomSheetProps {
   isOpen: boolean;
   title: string;
+  subtitle?: string;
   onClose: () => void;
   children: ReactNode;
 }
@@ -15,6 +16,7 @@ interface BottomSheetProps {
 export default function BottomSheet({
   isOpen,
   title,
+  subtitle = "Review your information before continuing.",
   onClose,
   children,
 }: BottomSheetProps) {
@@ -59,20 +61,20 @@ export default function BottomSheet({
       <div
         onClick={onClose}
         className={`fixed inset-0 z-[70] bg-black/40 backdrop-blur-[1px] transition-opacity duration-300 ${
-  isOpen
-    ? "visible pointer-events-auto opacity-100"
-    : "invisible pointer-events-none opacity-0"
-}`}
+          isOpen
+            ? "visible pointer-events-auto opacity-100"
+            : "invisible pointer-events-none opacity-0"
+        }`}
       />
 
       {/* Bottom Sheet */}
       <div
-  className={`fixed inset-x-0 bottom-0 z-[80] flex justify-center ${
-    isOpen
-      ? "visible translate-y-0 transition-transform duration-300 ease-out"
-      : "invisible translate-y-full"
-  }`}
->
+        className={`fixed inset-x-0 bottom-0 z-[80] flex justify-center ${
+          isOpen
+            ? "visible translate-y-0 transition-transform duration-300 ease-out"
+            : "invisible translate-y-full"
+        }`}
+      >
         <div className="flex max-h-[calc(100dvh-1rem)] w-full max-w-2xl flex-col overflow-hidden rounded-t-3xl bg-white shadow-2xl sm:max-h-[90vh] sm:rounded-3xl">
           {/* Drag Handle */}
           <div className="shrink-0 bg-white pt-3">
@@ -87,10 +89,11 @@ export default function BottomSheet({
                   {title}
                 </h2>
 
-                <p className="mt-1 text-sm text-gray-500">
-                  Review your information
-                  before continuing.
-                </p>
+                {subtitle && (
+                  <p className="mt-1 text-sm text-gray-500">
+                    {subtitle}
+                  </p>
+                )}
               </div>
 
               <button
@@ -105,9 +108,26 @@ export default function BottomSheet({
           </div>
 
           {/* Scrollable Content */}
-          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-5 pb-[calc(1.5rem+env(safe-area-inset-bottom))] sm:px-6 sm:py-6">
-            {children}
-          </div>
+<div
+  className="
+    min-h-0
+    flex-1
+    overflow-x-hidden
+    overflow-y-auto
+    overscroll-contain
+    touch-pan-y
+    px-5
+    py-5
+    pb-[calc(2rem+env(safe-area-inset-bottom))]
+    sm:px-6
+    sm:py-6
+  "
+  style={{
+    WebkitOverflowScrolling: "touch",
+  }}
+>
+  {children}
+</div>
         </div>
       </div>
     </>

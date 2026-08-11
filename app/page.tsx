@@ -579,7 +579,7 @@ export default function Home() {
   ]);
 
   return (
-    <AppLayout>
+    <AppLayout showGreeting>
       <div className="space-y-6 lg:space-y-8">
         <KitchenSnapshot
           pantryItems={

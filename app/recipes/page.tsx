@@ -1,6 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import {
+  useState,
+} from "react";
+
+
 
 import AppLayout from "../../components/AppLayout";
 
@@ -8,20 +12,30 @@ import RecipesHeader from "../../components/recipes/RecipesHeader";
 import RecipesStats from "../../components/recipes/RecipesStats";
 import RecipesTable from "../../components/recipes/RecipesTable";
 import RecipeForm from "../../components/recipes/RecipeForm";
+import RecipesMobileFilters from "../../components/recipes/RecipesMobileFilters";
 
-import MobilePageHeader from "../../components/mobile/MobilePageHeader";
-import MobileSearchBar from "../../components/mobile/MobileSearchBar";
-import KBFloatingButton from "../../components/ui/KBFloatingButton";
+import {
+  Recipe,
+} from "../../types/recipe";
 
-import { Recipe } from "../../types/recipe";
+import {
+  MEAL_TYPES,
+} from "../../constants/categories";
 
-import { useKitchen } from "../../context/KitchenContext";
+import {
+  useKitchen,
+} from "../../context/KitchenContext";
 
 const categories = [
   "All",
   "Vegetarian",
   "Non-Veg",
   "Vegan",
+];
+
+const mealFilters = [
+  "All",
+  ...MEAL_TYPES,
 ];
 
 export default function RecipesPage() {
@@ -39,9 +53,10 @@ export default function RecipesPage() {
   const [
     editingRecipe,
     setEditingRecipe,
-  ] = useState<Recipe | null>(
-    null
-  );
+  ] =
+    useState<Recipe | null>(
+      null
+    );
 
   const [
     searchTerm,
@@ -53,14 +68,25 @@ export default function RecipesPage() {
     setSelectedCategory,
   ] = useState("All");
 
+  const [
+    selectedMealType,
+    setSelectedMealType,
+  ] = useState("All");
+
   function openAddForm() {
     setEditingRecipe(null);
-    setIsFormOpen(true);
+
+    setIsFormOpen(
+      true
+    );
   }
 
   function closeForm() {
     setEditingRecipe(null);
-    setIsFormOpen(false);
+
+    setIsFormOpen(
+      false
+    );
   }
 
   if (!isKitchenLoaded) {
@@ -77,35 +103,53 @@ export default function RecipesPage() {
 
   return (
     <AppLayout>
-      <div className="space-y-6 pb-28 md:pb-0">
-        <div className="sticky top-0 z-30 -mx-4 bg-[#FFFDF8] px-4 pb-3 pt-1 md:hidden">
-          <MobilePageHeader
-            title="Recipes"
-            subtitle={`${recipes.length} Recipes`}
-          />
+      <div className="space-y-3 pb-24 md:pb-0">
+        {/* Mobile Header */}
+<div className="md:hidden">
+  <div>
+    <h1 className="text-xl font-bold text-[#2F6B3C]">
+      Recipes
+    </h1>
 
-          <div className="mt-3">
-            <MobileSearchBar
-              searchValue={
-                searchTerm
-              }
-              onSearchChange={
-                setSearchTerm
-              }
-              categoryValue={
-                selectedCategory
-              }
-              categories={
-                categories
-              }
-              onCategoryChange={
-                setSelectedCategory
-              }
-              placeholder="Search recipes..."
-            />
-          </div>
-        </div>
+    <p className="mt-1 text-sm text-[#7A746C]">
+      Save, discover and cook your favourite meals.
+    </p>
+  </div>
 
+  <div className="mt-2.5">
+    <RecipesMobileFilters
+      searchValue={
+        searchTerm
+      }
+      onSearchChange={
+        setSearchTerm
+      }
+      categoryValue={
+        selectedCategory
+      }
+      categories={
+        categories
+      }
+      onCategoryChange={
+        setSelectedCategory
+      }
+      mealValue={
+        selectedMealType
+      }
+      mealTypes={
+        mealFilters
+      }
+      onMealChange={
+        setSelectedMealType
+      }
+      onAdd={
+        openAddForm
+      }
+    />
+  </div>
+</div>
+
+        {/* Desktop Header */}
         <div className="hidden md:block">
           <RecipesHeader
             onAdd={
@@ -126,17 +170,28 @@ export default function RecipesPage() {
           />
         </div>
 
+        {/* Summary */}
         <RecipesStats
-          recipes={recipes}
+          recipes={
+            recipes
+          }
         />
 
+        {/* Recipe List */}
         <RecipesTable
-          recipes={recipes}
-          setRecipes={setRecipes}
-          onEdit={(recipe) => {
+          recipes={
+            recipes
+          }
+          setRecipes={
+            setRecipes
+          }
+          onEdit={(
+            recipe
+          ) => {
             setEditingRecipe(
               recipe
             );
+
             setIsFormOpen(
               true
             );
@@ -147,14 +202,20 @@ export default function RecipesPage() {
           selectedCategory={
             selectedCategory
           }
+          selectedMealType={
+            selectedMealType
+          }
         />
 
+        {/* Add / Edit */}
         {isFormOpen && (
           <RecipeForm
             recipe={
               editingRecipe
             }
-            recipes={recipes}
+            recipes={
+              recipes
+            }
             setRecipes={
               setRecipes
             }
@@ -164,14 +225,6 @@ export default function RecipesPage() {
           />
         )}
       </div>
-
-      <KBFloatingButton
-        label="Add"
-        ariaLabel="Add recipe"
-        onClick={
-          openAddForm
-        }
-      />
     </AppLayout>
   );
 }

@@ -648,11 +648,7 @@ function requestDelete(
             {/* Home Inventory Header */}
 <section className="flex items-start justify-between gap-4">
   <div className="min-w-0">
-    <p
-      className={`${typography.eyebrow} text-[#C9872F]`}
-    >
-      Kitchen Brain
-    </p>
+    
 
     <h1
       className={`${typography.pageTitle} mt-1 text-[#245B32]`}
