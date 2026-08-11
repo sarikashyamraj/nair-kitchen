@@ -1,5 +1,6 @@
 "use client";
 import {
+  Check,
   Share2,
 } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -367,24 +368,39 @@ async function handleShareGrocery() {
 }
   return (
     <AppLayout>
-      <div className="space-y-6 pb-28 md:pb-0">
+      <div className="space-y-4 pb-36 md:pb-0">
         {/* Sticky Mobile Header and Search */}
         {/* Mobile Header and Search */}
 <div className="-mx-4 bg-[#FFFDF8] px-4 pb-3 pt-1 md:hidden">
           <MobilePageHeader
-            title="Grocery"
-            subtitle={`${notPurchasedItems.length} Items Remaining`}
+            title="Grocery List"
+subtitle={`${notPurchasedItems.length} ${
+  notPurchasedItems.length === 1
+    ? "item"
+    : "items"
+} to buy`}
           />
 
           <div className="mt-3">
             <MobileSearchBar
-              searchValue={searchTerm}
-              onSearchChange={setSearchTerm}
-              categoryValue={selectedCategory}
-              categories={categories}
-              onCategoryChange={setSelectedCategory}
-              placeholder="Search grocery items..."
-            />
+  searchValue={
+    searchTerm
+  }
+  onSearchChange={
+    setSearchTerm
+  }
+  categoryValue={
+    selectedCategory
+  }
+  categories={
+    categories
+  }
+  onCategoryChange={
+    setSelectedCategory
+  }
+  placeholder="Search grocery items..."
+  compact
+/>
           </div>
         </div>
 
@@ -401,41 +417,55 @@ async function handleShareGrocery() {
   setSelectedCategory={setSelectedCategory}
 />
         </div>
-{/* Mobile Share Grocery */}
-<button
-  type="button"
-  onClick={handleShareGrocery}
-  disabled={
-    notPurchasedItems.length === 0
-  }
-  className="flex w-full items-center justify-center gap-2 rounded-xl border border-[#2F6B3C] bg-white px-4 py-3 font-semibold text-[#2F6B3C] shadow-sm transition active:bg-[#F3F8F4] disabled:cursor-not-allowed disabled:border-gray-200 disabled:text-gray-400 disabled:shadow-none md:hidden"
->
-  <Share2 size={18} />
+{/* Mobile Grocery Actions */}
+<div className="grid grid-cols-2 gap-2 md:hidden">
+  <button
+    type="button"
+    onClick={handleShareGrocery}
+    disabled={
+      notPurchasedItems.length === 0
+    }
+    className="flex min-h-11 items-center justify-center gap-2 rounded-xl border border-[#2F6B3C] bg-white px-3 py-2.5 text-sm font-semibold text-[#2F6B3C] shadow-sm transition active:scale-[0.98] active:bg-[#F3F8F4] disabled:cursor-not-allowed disabled:border-gray-200 disabled:text-gray-400 disabled:shadow-none"
+  >
+    <Share2
+      size={16}
+      strokeWidth={1.9}
+    />
 
-  Share Grocery List
-</button>
-        {/* Mobile Complete Shopping */}
-        <button
-          type="button"
-          onClick={handleFinishShopping}
-          className="w-full rounded-xl bg-[#D89B3C] px-4 py-3 font-semibold text-white shadow-sm md:hidden"
-        >
-          
-          ✅ Complete Shopping
-        </button>
+    <span>Share List</span>
+  </button>
+
+  <button
+    type="button"
+    onClick={handleFinishShopping}
+    disabled={
+      purchasedItems.length === 0
+    }
+    className="flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[#D89B3C] px-3 py-2.5 text-sm font-semibold text-white shadow-sm transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+  >
+    <Check
+      size={16}
+      strokeWidth={2}
+    />
+
+    <span>Complete</span>
+  </button>
+</div>
 
         <ShoppingStats items={shopping} />
 
-        <ShoppingTable
-          items={shopping}
-          setItems={setShopping}
-          onEdit={(item) => {
-            setEditingItem(item);
-            setIsFormOpen(true);
-          }}
-          searchTerm={searchTerm}
-          selectedCategory={selectedCategory}
-        />
+        <div className="md:pb-0">
+  <ShoppingTable
+    items={shopping}
+    setItems={setShopping}
+    onEdit={(item) => {
+      setEditingItem(item);
+      setIsFormOpen(true);
+    }}
+    searchTerm={searchTerm}
+    selectedCategory={selectedCategory}
+  />
+</div>
 
         {isFormOpen && (
           <ShoppingForm

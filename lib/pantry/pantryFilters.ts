@@ -126,13 +126,20 @@ export function findMatchingPantryItem(
   const normalizedCandidateName =
     normalizeText(candidate.name);
 
+  const normalizedCandidateUnit =
+    normalizeText(candidate.unit);
+
+  const normalizedCandidateCategory =
+    normalizeText(candidate.category);
+
   return items.find((item) => {
     return (
       normalizeText(item.name) ===
         normalizedCandidateName &&
-      item.unit === candidate.unit &&
-      item.category ===
-        candidate.category
+      normalizeText(item.unit) ===
+        normalizedCandidateUnit &&
+      normalizeText(item.category) ===
+        normalizedCandidateCategory
     );
   });
 }

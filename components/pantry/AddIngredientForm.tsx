@@ -11,6 +11,9 @@ import {
 
 import { PantryItem } from "../../types/pantry";
 import { UNITS } from "../../constants/units";
+import {
+  HOME_INVENTORY_CATEGORIES,
+} from "../../constants/categories";
 import { useToast } from "../../context/ToastContext";
 import { suggestCategory } from "../../services/categorySuggestion";
 
@@ -182,14 +185,31 @@ useEffect(() => {
     }
 
     if (!category.trim()) {
-      showToast({
-        type: "warning",
-        message:
-          "Please select a category.",
-      });
+  showToast({
+    type: "warning",
+    message:
+      "Please select a category.",
+  });
 
-      return;
-    }
+  return;
+}
+
+const isValidCategory =
+  HOME_INVENTORY_CATEGORIES.some(
+    (inventoryCategory) =>
+      inventoryCategory ===
+      category
+  );
+
+if (!isValidCategory) {
+  showToast({
+    type: "warning",
+    message:
+      "Please select a valid Home Inventory category.",
+  });
+
+  return;
+}
 
     const pantryItem:
       PantryItem = {

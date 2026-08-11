@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 
 import {
-  INGREDIENT_CATEGORIES,
+  HOME_INVENTORY_CATEGORIES,
 } from "../../constants/categories";
 
 type InventoryCategorySelectProps = {
@@ -65,7 +65,11 @@ export default function InventoryCategorySelect({
     onChange(category);
     setIsOpen(false);
   }
-
+const isValidValue =
+  HOME_INVENTORY_CATEGORIES.some(
+    (category) =>
+      category === value
+  );
   return (
     <div
       ref={containerRef}
@@ -88,9 +92,17 @@ export default function InventoryCategorySelect({
         aria-expanded={isOpen}
         className="flex w-full items-center justify-between gap-2 rounded-xl border border-[#EADCC4] bg-white px-4 py-3 text-left text-[#5A4032] shadow-sm transition-all duration-200 focus:border-[#2F6B3C] focus:outline-none focus:ring-2 focus:ring-[#2F6B3C]/20"
       >
-        <span className="truncate">
-          {value}
-        </span>
+        <span
+  className={`truncate ${
+    isValidValue
+      ? "text-[#5A4032]"
+      : "text-amber-700"
+  }`}
+>
+  {isValidValue
+    ? value
+    : "Select category"}
+</span>
 
         <ChevronDown
           size={17}
@@ -107,7 +119,7 @@ export default function InventoryCategorySelect({
           role="listbox"
           className="absolute bottom-full left-0 z-[200] mb-2 max-h-56 w-full overflow-y-auto overscroll-contain rounded-xl border border-[#EADCC4] bg-white p-1 shadow-xl"
         >
-          {INGREDIENT_CATEGORIES.map(
+          {HOME_INVENTORY_CATEGORIES.map(
             (category) => {
               const isSelected =
                 category === value;

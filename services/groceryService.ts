@@ -122,14 +122,14 @@ export async function saveCloudGroceryItem(
     parseQuantity(item.quantity);
 
   const payload = {
-    user_id: user.id,
-    name: item.name.trim(),
-    category: item.category,
-    quantity:
-      parsedQuantity.quantity,
-    unit: parsedQuantity.unit,
-    purchased: item.purchased,
-  };
+  user_id: user.id,
+  name: item.name.trim(),
+  category: item.category,
+  quantity:
+    parsedQuantity.quantity,
+  unit: parsedQuantity.unit,
+  purchased: item.purchased,
+};
 
   const hasUuid =
     /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
@@ -198,7 +198,12 @@ export async function saveCloudGroceryItem(
     error: insertError,
   } = await supabase
     .from("grocery_items")
-    .insert(payload)
+    .insert({
+  ...payload,
+  ...(hasUuid
+    ? { id: item.id }
+    : {}),
+})
     .select(
       `
         id,

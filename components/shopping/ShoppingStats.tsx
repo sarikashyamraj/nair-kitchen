@@ -1,77 +1,163 @@
+import {
+  CheckCircle2,
+  ListChecks,
+  ShoppingCart,
+  TimerReset,
+} from "lucide-react";
+
 import { ShoppingItem } from "../../types/shopping";
+
+import {
+  typography,
+} from "../../lib/theme/typography";
 
 interface ShoppingStatsProps {
   items: ShoppingItem[];
 }
 
-export default function ShoppingStats({ items }: ShoppingStatsProps) {
-  const totalItems = items.length;
+export default function ShoppingStats({
+  items,
+}: ShoppingStatsProps) {
+  const totalItems =
+    items.length;
 
-  const purchasedItems = items.filter((item) => item.purchased).length;
+  const purchasedItems =
+    items.filter(
+      (item) =>
+        item.purchased
+    ).length;
 
-  const remainingItems = totalItems - purchasedItems;
+  const remainingItems =
+    totalItems -
+    purchasedItems;
 
   const completion =
     totalItems === 0
       ? 0
-      : Math.round((purchasedItems / totalItems) * 100);
+      : Math.round(
+          (
+            purchasedItems /
+            totalItems
+          ) * 100
+        );
 
-  const cards = [
+  const metrics = [
     {
-      title: "Total Items",
+      label: "Total",
       value: totalItems,
-      color: "bg-blue-100 text-blue-700",
+      icon: ShoppingCart,
+      iconClass:
+        "bg-[#EEF5F0] text-[#2F6B3C]",
+      valueClass:
+        "text-[#245B32]",
     },
     {
-      title: "Purchased",
+      label: "Purchased",
       value: purchasedItems,
-      color: "bg-green-100 text-green-700",
+      icon: CheckCircle2,
+      iconClass:
+        "bg-green-100 text-green-700",
+      valueClass:
+        "text-green-700",
     },
     {
-      title: "Remaining",
+      label: "To Buy",
       value: remainingItems,
-      color: "bg-yellow-100 text-yellow-700",
+      icon: TimerReset,
+      iconClass:
+        "bg-amber-100 text-[#B87516]",
+      valueClass:
+        "text-[#B87516]",
     },
     {
-      title: "Completion",
+      label: "Complete",
       value: `${completion}%`,
-      color: "bg-purple-100 text-purple-700",
+      icon: ListChecks,
+      iconClass:
+        "bg-[#F1ECFA] text-[#7C3AED]",
+      valueClass:
+        "text-[#7C3AED]",
     },
   ];
 
   return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {cards.map((card) => (
-          <div
-            key={card.title}
-            className={`rounded-xl p-5 shadow ${card.color}`}
-          >
-            <p className="text-sm font-medium">{card.title}</p>
+    <section className="rounded-2xl border border-[#E8DED1] bg-white p-3 shadow-sm">
+      {/* Compact Metrics */}
+      <div className="grid grid-cols-4 gap-2">
+        {metrics.map(
+          (metric) => {
+            const Icon =
+              metric.icon;
 
-            <h2 className="text-3xl font-bold mt-2">{card.value}</h2>
-          </div>
-        ))}
+            return (
+              <div
+                key={
+                  metric.label
+                }
+                className="rounded-xl bg-[#FCFAF6] px-1.5 py-2 text-center"
+              >
+                <div
+                  className={`mx-auto flex h-7 w-7 items-center justify-center rounded-full ${metric.iconClass}`}
+                >
+                  <Icon
+                    size={14}
+                    strokeWidth={1.9}
+                  />
+                </div>
+
+                <p
+                  className={`${typography.stat} mt-1 ${metric.valueClass}`}
+                >
+                  {metric.value}
+                </p>
+
+                <p
+                  className={`${typography.caption} mt-0.5 truncate text-[#8A8178]`}
+                >
+                  {metric.label}
+                </p>
+              </div>
+            );
+          }
+        )}
       </div>
 
-      <div className="bg-white rounded-xl shadow p-5">
-        <div className="flex justify-between mb-2">
-          <p className="font-semibold text-gray-700">Shopping Progress</p>
+      {/* Integrated Progress */}
+      <div className="mt-3 border-t border-[#F0E7DA] pt-3">
+        <div className="flex items-center justify-between gap-3">
+          <p
+            className={`${typography.bodyMedium} text-[#245B32]`}
+          >
+            Shopping Progress
+          </p>
 
-          <p className="font-semibold text-gray-700">{completion}%</p>
+          <span
+            className={`${typography.caption} font-semibold text-[#245B32]`}
+          >
+            {completion}%
+          </span>
         </div>
 
-        <div className="w-full bg-gray-200 rounded-full h-4">
+        <div className="mt-2 h-2 overflow-hidden rounded-full bg-[#E7ECE8]">
           <div
-            className="bg-green-600 h-4 rounded-full transition-all"
-            style={{ width: `${completion}%` }}
+            className="h-full rounded-full bg-[#2F6B3C] transition-all duration-500"
+            style={{
+              width: `${completion}%`,
+            }}
           />
         </div>
 
-        <p className="text-sm text-gray-500 mt-2">
-          {purchasedItems} of {totalItems} items purchased
+        <p
+          className={`${typography.caption} mt-1.5 text-[#7A746C]`}
+        >
+          {purchasedItems} of{" "}
+          {totalItems}{" "}
+          {totalItems === 1
+            ? "item"
+            : "items"}{" "}
+          purchased
         </p>
       </div>
-    </div>
+    </section>
   );
 }

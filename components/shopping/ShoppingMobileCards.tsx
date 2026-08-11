@@ -1,10 +1,37 @@
+"use client";
+
+import Image from "next/image";
+
+import {
+  Check,
+  Pencil,
+  Trash2,
+} from "lucide-react";
+
 import { ShoppingItem } from "../../types/shopping";
+
+import {
+  getIngredientImage,
+} from "../../lib/ingredients/getIngredientImage";
+
+import {
+  typography,
+} from "../../lib/theme/typography";
 
 type ShoppingMobileCardsProps = {
   items: ShoppingItem[];
-  onTogglePurchased: (id: string) => void;
-  onEdit: (item: ShoppingItem) => void;
-  onDelete: (id: string) => void;
+
+  onTogglePurchased: (
+    id: string
+  ) => void;
+
+  onEdit: (
+    item: ShoppingItem
+  ) => void;
+
+  onDelete: (
+    id: string
+  ) => void;
 };
 
 export default function ShoppingMobileCards({
@@ -13,75 +40,166 @@ export default function ShoppingMobileCards({
   onEdit,
   onDelete,
 }: ShoppingMobileCardsProps) {
-  return (
-    <div className="space-y-2 md:hidden">
-      {items.map((item) => (
-        <article
-          key={item.id}
-          className={`rounded-xl border bg-white px-3 py-3 shadow-sm ${
-            item.purchased
-              ? "border-green-200 bg-green-50/40"
-              : "border-[#EADCC4]"
-          }`}
+  if (items.length === 0) {
+    return (
+      <div className="rounded-2xl border border-[#E8DED1] bg-white p-6 text-center shadow-sm md:hidden">
+        <p
+          className={`${typography.cardTitle} text-[#2F6B3C]`}
         >
-          <div className="flex items-center gap-3">
-            <input
-              type="checkbox"
-              checked={item.purchased}
-              onChange={() => onTogglePurchased(item.id)}
-              className="h-6 w-6 shrink-0 accent-[#2F6B3C]"
-              aria-label={`Mark ${item.name} as purchased`}
-            />
+          No grocery items
+        </p>
 
-            <div className="min-w-0 flex-1">
-              <h3
-                className={`truncate text-base font-bold ${
-                  item.purchased
-                    ? "text-gray-400 line-through"
-                    : "text-[#2F6B3C]"
-                }`}
-              >
-                {item.name}
-              </h3>
+        <p
+          className={`${typography.body} mt-1 text-[#7A746C]`}
+        >
+          Add an item or generate your list from Home Inventory.
+        </p>
+      </div>
+    );
+  }
 
-              <p className="mt-1 text-sm text-[#5A4032]">
-                {item.quantity}
-                <span className="ml-2 text-xs text-gray-500">
-                  • {item.category}
-                </span>
-              </p>
+  return (
+    <div className="space-y-3 pb-32 md:hidden">
+      {items.map((item) => {
+        const imageSrc =
+          getIngredientImage(
+            item.name,
+            item.category
+          );
+
+        return (
+          <article
+            key={item.id}
+            className={`overflow-hidden rounded-2xl border bg-white shadow-sm transition ${
+              item.purchased
+                ? "border-green-100 bg-[#F8FCF8]"
+                : "border-[#E8DED1]"
+            }`}
+          >
+            {/* Main Content */}
+            <div className="p-3.5">
+              <div className="flex items-center gap-3">
+
+                {/* Item Image */}
+                <div
+                  className={`relative h-[64px] w-[64px] shrink-0 overflow-hidden rounded-xl border border-[#F0E7DA] bg-[#FAF8F3] ${
+                    item.purchased
+                      ? "opacity-70"
+                      : ""
+                  }`}
+                >
+                  <Image
+                    src={imageSrc}
+                    alt={item.name}
+                    fill
+                    sizes="64px"
+                    className="object-cover"
+                    onError={(event) => {
+                      event.currentTarget.srcset =
+                        "";
+
+                      event.currentTarget.src =
+                        "/inventory/inventory-health.png";
+                    }}
+                  />
+                </div>
+
+                {/* Item Information */}
+                <div className="min-w-0 flex-1">
+                  <h3
+                    className={`${typography.itemTitle} truncate ${
+                      item.purchased
+                        ? "text-[#8A938C] line-through"
+                        : "text-[#1F5A33]"
+                    }`}
+                  >
+                    {item.name}
+                  </h3>
+
+                  <p
+                    className={`${typography.bodyMedium} mt-1 ${
+                      item.purchased
+                        ? "text-[#8A938C]"
+                        : "text-[#5A4032]"
+                    }`}
+                  >
+                    {item.quantity}
+                  </p>
+
+                  <p
+                    className={`${typography.caption} mt-0.5 text-[#938A81]`}
+                  >
+                    {item.category}
+                  </p>
+                </div>
+
+                {/* Purchased Toggle */}
+                <button
+                  type="button"
+                  onClick={() =>
+                    onTogglePurchased(
+                      item.id
+                    )
+                  }
+                  aria-label={
+                    item.purchased
+                      ? `Mark ${item.name} as pending`
+                      : `Mark ${item.name} as purchased`
+                  }
+                  aria-pressed={
+                    item.purchased
+                  }
+                  className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border transition active:scale-95 ${
+                    item.purchased
+                      ? "border-green-600 bg-green-600 text-white shadow-sm"
+                      : "border-[#DDD4C8] bg-white text-transparent hover:border-green-300"
+                  }`}
+                >
+                  <Check
+                    size={15}
+                    strokeWidth={2.4}
+                  />
+                </button>
+              </div>
             </div>
 
-            <span
-              className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold ${
-                item.purchased
-                  ? "bg-green-100 text-green-700"
-                  : "bg-yellow-100 text-yellow-700"
-              }`}
-            >
-              {item.purchased ? "Purchased" : "Pending"}
-            </span>
-          </div>
+            {/* Actions */}
+            <div className="grid grid-cols-2 border-t border-[#F0E7DA]">
+              <button
+                type="button"
+                onClick={() =>
+                  onEdit(item)
+                }
+                className={`${typography.button} flex min-h-10 items-center justify-center gap-2 border-r border-[#F0E7DA] text-[#2F6B3C] transition hover:bg-[#F7FBF7] active:bg-green-50`}
+              >
+                <Pencil
+                  size={14}
+                  strokeWidth={1.9}
+                />
 
-          <div className="mt-3 flex gap-2 border-t border-[#F4E8D0] pt-3">
-            <button
-              type="button"
-              onClick={() => onEdit(item)}
-              className="min-h-9 flex-1 rounded-lg border border-blue-200 bg-blue-50 px-3 text-xs font-semibold text-blue-700"
-            >
-              ✏️ Edit
-            </button>
+                Edit
+              </button>
 
-            <button
-              type="button"
-              onClick={() => onDelete(item.id)}
-              className="min-h-9 flex-1 rounded-lg border border-red-200 bg-red-50 px-3 text-xs font-semibold text-red-700"
-            >
-              🗑 Delete
-            </button>
-          </div>
-        </article>
-      ))}
+              <button
+                type="button"
+                onClick={() =>
+                  onDelete(
+                    item.id
+                  )
+                }
+                className={`${typography.button} flex min-h-10 items-center justify-center gap-2 text-red-600 transition hover:bg-red-50/60 active:bg-red-50`}
+              >
+                <Trash2
+                  size={14}
+                  strokeWidth={1.9}
+                />
+
+                Delete
+              </button>
+            </div>
+          </article>
+        );
+      })}
     </div>
   );
 }

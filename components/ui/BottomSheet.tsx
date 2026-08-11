@@ -1,6 +1,9 @@
 "use client";
 
-import { ReactNode, useEffect } from "react";
+import {
+  ReactNode,
+  useEffect,
+} from "react";
 
 interface BottomSheetProps {
   isOpen: boolean;
@@ -16,76 +19,93 @@ export default function BottomSheet({
   children,
 }: BottomSheetProps) {
   useEffect(() => {
-    function handleEscape(event: KeyboardEvent) {
-      if (event.key === "Escape") {
+    function handleEscape(
+      event: KeyboardEvent
+    ) {
+      if (
+        event.key === "Escape"
+      ) {
         onClose();
       }
     }
 
     if (isOpen) {
-      document.addEventListener("keydown", handleEscape);
-      document.body.style.overflow = "hidden";
+      document.addEventListener(
+        "keydown",
+        handleEscape
+      );
+
+      document.body.style.overflow =
+        "hidden";
     }
 
     return () => {
-      document.removeEventListener("keydown", handleEscape);
-      document.body.style.overflow = "";
+      document.removeEventListener(
+        "keydown",
+        handleEscape
+      );
+
+      document.body.style.overflow =
+        "";
     };
-  }, [isOpen, onClose]);
+  }, [
+    isOpen,
+    onClose,
+  ]);
 
   return (
     <>
       {/* Overlay */}
       <div
         onClick={onClose}
-        className={`fixed inset-0 z-40 bg-black/40 transition-opacity duration-300 ${
-          isOpen
-            ? "opacity-100 pointer-events-auto"
-            : "opacity-0 pointer-events-none"
-        }`}
+        className={`fixed inset-0 z-[70] bg-black/40 backdrop-blur-[1px] transition-opacity duration-300 ${
+  isOpen
+    ? "visible pointer-events-auto opacity-100"
+    : "invisible pointer-events-none opacity-0"
+}`}
       />
 
       {/* Bottom Sheet */}
       <div
-        className={`fixed bottom-0 left-0 right-0 z-50 transition-transform duration-300 ease-out ${
-          isOpen
-            ? "translate-y-0"
-            : "translate-y-full"
-        }`}
-      >
-        <div className="mx-auto max-h-[90vh] w-full max-w-2xl overflow-hidden rounded-t-3xl bg-white shadow-2xl">
-
+  className={`fixed inset-x-0 bottom-0 z-[80] flex justify-center ${
+    isOpen
+      ? "visible translate-y-0 transition-transform duration-300 ease-out"
+      : "invisible translate-y-full"
+  }`}
+>
+        <div className="flex max-h-[calc(100dvh-1rem)] w-full max-w-2xl flex-col overflow-hidden rounded-t-3xl bg-white shadow-2xl sm:max-h-[90vh] sm:rounded-3xl">
           {/* Drag Handle */}
-          <div className="flex justify-center pt-3">
-            <div className="h-1.5 w-14 rounded-full bg-gray-300" />
+          <div className="shrink-0 bg-white pt-3">
+            <div className="mx-auto h-1.5 w-14 rounded-full bg-gray-300" />
           </div>
 
           {/* Header */}
-          <div className="border-b border-[#F4E8D0] px-6 py-5">
-            <div className="flex items-center justify-between">
-
-              <div>
-                <h2 className="text-2xl font-bold text-[#2F6B3C]">
+          <div className="shrink-0 border-b border-[#F4E8D0] bg-white px-5 py-4 sm:px-6 sm:py-5">
+            <div className="flex items-start justify-between gap-4">
+              <div className="min-w-0">
+                <h2 className="text-xl font-bold text-[#2F6B3C] sm:text-2xl">
                   {title}
                 </h2>
 
                 <p className="mt-1 text-sm text-gray-500">
-                  Review your information before continuing.
+                  Review your information
+                  before continuing.
                 </p>
               </div>
 
               <button
+                type="button"
                 onClick={onClose}
-                className="rounded-full p-2 transition hover:bg-[#F4E8D0]"
+                aria-label="Close"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-gray-500 transition hover:bg-[#F4E8D0]"
               >
-                ✕
+                ×
               </button>
-
             </div>
           </div>
 
-          {/* Content */}
-          <div className="max-h-[65vh] overflow-y-auto px-6 py-6">
+          {/* Scrollable Content */}
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-5 pb-[calc(1.5rem+env(safe-area-inset-bottom))] sm:px-6 sm:py-6">
             {children}
           </div>
         </div>
