@@ -1,9 +1,9 @@
 "use client";
 
 import {
+  ClipboardCheck,
   Clock3,
   Pencil,
-  ShoppingCart,
   Trash2,
   Utensils,
 } from "lucide-react";
@@ -165,16 +165,13 @@ export default function RecipesMobileCards({
 }}
                   className={`${typography.button} mt-3 flex min-h-10 w-full items-center justify-center gap-2 rounded-xl bg-[#2F6B3C] px-3 text-white shadow-sm transition active:scale-[0.99] active:bg-[#245B32]`}
                 >
-                  <ShoppingCart
-                    size={15}
-                    strokeWidth={
-                      1.9
-                    }
-                  />
+                  <ClipboardCheck
+  size={15}
+  strokeWidth={1.9}
+/>
 
                   <span>
-                    Add Ingredients to
-                    Grocery List
+                    Check Ingredients
                   </span>
                 </button>
               </div>

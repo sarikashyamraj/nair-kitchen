@@ -614,8 +614,10 @@ export default function RecipeForm({
                           min="0"
                           step="any"
                           value={
-                            ingredient.quantity
-                          }
+  ingredient.quantity === 0
+    ? ""
+    : ingredient.quantity
+}
                           onChange={(
                             event
                           ) =>
