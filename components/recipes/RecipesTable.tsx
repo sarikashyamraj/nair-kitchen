@@ -1,6 +1,7 @@
 "use client";
 import {
   deleteCloudGroceryRequirementSource,
+  deleteCloudGroceryRequirementSourcesBySource,
   loadCloudGroceryRequirementSourcesBySource,
   saveCloudGroceryRequirementSource,
   saveCloudGroceryRequirementSources,
@@ -1129,49 +1130,169 @@ async function handleReduceAllocation(
           )
         }
         onConfirm={async () => {
-          if (
-            !recipeToDelete
-          ) {
-            return;
-          }
+  if (!recipeToDelete) {
+    return;
+  }
 
-          try {
-            await deleteCloudRecipe(
-              recipeToDelete.id
-            );
+  try {
+    const requirementSources =
+      await loadCloudGroceryRequirementSourcesBySource(
+        "recipe",
+        recipeToDelete.id
+      );
 
-            setRecipes(
-              (
-                currentRecipes
-              ) =>
-                currentRecipes.filter(
-                  (recipe) =>
-                    recipe.id !==
-                    recipeToDelete.id
-                )
-            );
+    let nextShopping =
+      shopping.map((item) => ({
+        ...item,
+      }));
 
-            showToast({
-              type: "success",
+    /*
+     * Reduce only quantities allocated
+     * by this recipe.
+     */
+    for (const source of requirementSources) {
+      const groceryIndex =
+        nextShopping.findIndex(
+          (item) =>
+            item.id ===
+            source.groceryItemId
+        );
 
-              message: `"${recipeToDelete.name}" deleted successfully.`,
-            });
-          } catch (error) {
-            showToast({
-              type: "error",
+      if (groceryIndex < 0) {
+        continue;
+      }
 
-              message:
-                error instanceof
-                Error
-                  ? error.message
-                  : "Unable to delete recipe.",
-            });
-          } finally {
-            setRecipeToDelete(
-              null
-            );
-          }
-        }}
+      const groceryItem =
+        nextShopping[groceryIndex];
+
+      const parsedGrocery =
+        parseShoppingQuantity(
+          groceryItem.quantity
+        );
+
+      if (!parsedGrocery) {
+        throw new Error(
+          `Unable to read Grocery quantity for ${groceryItem.name}.`
+        );
+      }
+
+      const groceryUnit =
+        normalizeUnit(
+          parsedGrocery.unit
+        );
+
+      const sourceUnit =
+        normalizeUnit(
+          source.unit
+        );
+
+      if (
+        groceryUnit !==
+        sourceUnit
+      ) {
+        throw new Error(
+          `${groceryItem.name} is stored in Grocery as ${groceryItem.quantity}. Please review that item before deleting this recipe.`
+        );
+      }
+
+      const remainingQuantity =
+        parsedGrocery.quantity -
+        source.quantity;
+
+      /*
+       * If this recipe owns only part
+       * of the Grocery item, update the
+       * remaining quantity.
+       */
+      if (
+        remainingQuantity >
+        0
+      ) {
+        const updatedItem: ShoppingItem = {
+          ...groceryItem,
+
+          quantity:
+            formatQuantity(
+              remainingQuantity,
+              groceryUnit
+            ),
+        };
+
+        const savedItem =
+          await saveCloudGroceryItem(
+            updatedItem
+          );
+
+        nextShopping[
+          groceryIndex
+        ] = savedItem;
+
+        continue;
+      }
+
+      /*
+       * If this recipe owns the entire
+       * remaining Grocery quantity,
+       * leave the row alone for now.
+       *
+       * We do NOT automatically delete
+       * Grocery rows because a user may
+       * have manually adjusted them.
+       *
+       * We'll just remove the recipe
+       * allocation metadata.
+       */
+    }
+
+    /*
+     * Remove this recipe's allocation
+     * records.
+     */
+    await deleteCloudGroceryRequirementSourcesBySource(
+      "recipe",
+      recipeToDelete.id
+    );
+
+    /*
+     * Delete the recipe itself.
+     */
+    await deleteCloudRecipe(
+      recipeToDelete.id
+    );
+
+    setShopping(
+      nextShopping
+    );
+
+    setRecipes(
+      (currentRecipes) =>
+        currentRecipes.filter(
+          (recipe) =>
+            recipe.id !==
+            recipeToDelete.id
+        )
+    );
+
+    showToast({
+      type: "success",
+
+      message: `"${recipeToDelete.name}" deleted successfully and its Grocery allocations were reconciled.`,
+    });
+  } catch (error) {
+    showToast({
+      type: "error",
+
+      message:
+        error instanceof Error
+          ? error.message
+          : "Unable to delete recipe.",
+    });
+  } finally {
+    setRecipeToDelete(
+      null
+    );
+  }
+}}
       />
     </>
   );
