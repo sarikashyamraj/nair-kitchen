@@ -29,9 +29,24 @@ import {
 import {
   useKitchen,
 } from "../../../context/KitchenContext";
+
 import {
   analyzeWeeklyPlannerDemand,
 } from "../../../lib/planner/plannerDemandAnalyzer";
+
+import {
+  reconcilePlannerGrocery,
+} from "../../../lib/planner/plannerGroceryReconciler";
+
+import {
+  loadCloudGroceryRequirementSourcesBySource,
+} from "../../../services/groceryRequirementSourceService";
+
+import {
+  GroceryRequirementSource,
+} from "../../../types/groceryRequirementSource";
+
+
 const TEST_WEEK_START =
   "2026-08-17";
 
@@ -46,6 +61,7 @@ export default function PlannerV2DevPage() {
   const {
   recipes,
   pantry,
+  shopping,
   isKitchenLoaded,
 } = useKitchen();
 
@@ -74,7 +90,13 @@ export default function PlannerV2DevPage() {
     setMessage,
   ] =
     useState("");
-
+const [
+  plannerSources,
+  setPlannerSources,
+] =
+  useState<
+    GroceryRequirementSource[]
+  >([]);
   const testMeal =
     useMemo(() => {
       if (!plan) {
@@ -107,6 +129,27 @@ const demandAnalysis =
     plan,
     pantry,
   ]);
+  const groceryReconciliation =
+  useMemo(() => {
+    if (
+      !plan ||
+      !demandAnalysis
+    ) {
+      return null;
+    }
+
+    return reconcilePlannerGrocery(
+      plan.id,
+      demandAnalysis,
+      plannerSources,
+      shopping
+    );
+  }, [
+    plan,
+    demandAnalysis,
+    plannerSources,
+    shopping,
+  ]);
   async function reloadPlan() {
     try {
       setIsLoading(
@@ -121,7 +164,21 @@ const demandAnalysis =
         await loadCloudWeeklyMealPlan(
           TEST_WEEK_START
         );
+if (loadedPlan) {
+  const loadedSources =
+    await loadCloudGroceryRequirementSourcesBySource(
+      "planner",
+      loadedPlan.id
+    );
 
+  setPlannerSources(
+    loadedSources
+  );
+} else {
+  setPlannerSources(
+    []
+  );
+}
       setPlan(
         loadedPlan
       );
@@ -689,129 +746,136 @@ const demandAnalysis =
     </>
   )}
 </section>
+{/* Planner Grocery Reconciliation */}
+<section className="rounded-2xl border border-[#EADCC4] bg-white p-4 shadow-sm">
+  <h2 className="font-bold text-[#2F6B3C]">
+    Planner → Grocery Reconciliation
+  </h2>
+
+  <p className="mt-1 text-sm text-[#7A746C]">
+    Preview only. No Grocery changes are made from this screen.
+  </p>
+
+  {!groceryReconciliation ? (
+    <p className="mt-4 rounded-xl bg-[#FCFAF6] p-3 text-sm text-[#7A746C]">
+      No reconciliation available.
+    </p>
+  ) : (
+    <>
+      <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-5">
+        <div className="rounded-xl bg-green-50 p-3">
+          <p className="text-xs text-[#7A746C]">
+            Add
+          </p>
+          <p className="mt-1 text-xl font-bold text-green-700">
+            {groceryReconciliation.addCount}
+          </p>
+        </div>
+
+        <div className="rounded-xl bg-amber-50 p-3">
+          <p className="text-xs text-[#7A746C]">
+            Reduce
+          </p>
+          <p className="mt-1 text-xl font-bold text-[#B87516]">
+            {groceryReconciliation.reduceCount}
+          </p>
+        </div>
+
+        <div className="rounded-xl bg-red-50 p-3">
+          <p className="text-xs text-[#7A746C]">
+            Remove
+          </p>
+          <p className="mt-1 text-xl font-bold text-red-600">
+            {groceryReconciliation.removeCount}
+          </p>
+        </div>
+
+        <div className="rounded-xl bg-[#FCFAF6] p-3">
+          <p className="text-xs text-[#7A746C]">
+            No Change
+          </p>
+          <p className="mt-1 text-xl font-bold text-[#5A4032]">
+            {groceryReconciliation.unchangedCount}
+          </p>
+        </div>
+
+        <div className="rounded-xl bg-purple-50 p-3">
+          <p className="text-xs text-[#7A746C]">
+            Review
+          </p>
+          <p className="mt-1 text-xl font-bold text-purple-700">
+            {groceryReconciliation.reviewCount}
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-4 space-y-2">
+        {groceryReconciliation.items.length === 0 ? (
+          <p className="rounded-xl bg-[#FCFAF6] p-3 text-sm text-[#7A746C]">
+            No Planner Grocery requirements.
+          </p>
+        ) : (
+          groceryReconciliation.items.map(
+            (item) => (
+              <div
+                key={`${item.normalizedName}-${item.unit}`}
+                className="rounded-xl border border-[#EADCC4] bg-[#FCFAF6] p-3"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="font-semibold text-[#245B32]">
+                      {item.ingredientName}
+                    </p>
+
+                    <p className="mt-1 text-xs text-[#7A746C]">
+                      Planner needs:{" "}
+                      {item.requiredQuantity}{" "}
+                      {item.unit}
+                    </p>
+
+                    <p className="text-xs text-[#7A746C]">
+                      Already allocated by this week:{" "}
+                      {item.allocatedQuantity}{" "}
+                      {item.unit}
+                    </p>
+
+                    {item.adjustmentQuantity > 0 && (
+                      <p className="mt-1 text-sm font-semibold text-[#B87516]">
+                        Adjustment:{" "}
+                        {item.action === "add"
+                          ? "+"
+                          : item.action === "reduce" ||
+                              item.action === "remove"
+                            ? "-"
+                            : ""}
+                        {item.adjustmentQuantity}{" "}
+                        {item.unit}
+                      </p>
+                    )}
+                  </div>
+
+                  <span className="rounded-full border border-[#EADCC4] bg-white px-2.5 py-1 text-xs font-semibold uppercase text-[#5A4032]">
+                    {item.action}
+                  </span>
+                </div>
+
+                <p className="mt-2 text-xs leading-5 text-[#7A746C]">
+                  {item.message}
+                </p>
+              </div>
+            )
+          )
+        )}
+      </div>
+    </>
+  )}
+</section>
         <section className="rounded-2xl border border-[#EADCC4] bg-white p-4 shadow-sm">
           <div className="flex items-center justify-between gap-3">
             <h2 className="font-bold text-[#2F6B3C]">
               Database State
             </h2>
-        {/* Weekly Ingredient Demand */}
-        <section className="rounded-2xl border border-[#EADCC4] bg-white p-4 shadow-sm">
-          <h2 className="font-bold text-[#2F6B3C]">
-            Weekly Ingredient Demand
-          </h2>
-
-          <p className="mt-1 text-sm text-[#7A746C]">
-            Remaining Grocery demand from meals that are still Planned.
-          </p>
-
-          {!demandAnalysis ? (
-            <p className="mt-4 rounded-xl bg-[#FCFAF6] p-3 text-sm text-[#7A746C]">
-              No weekly plan available.
-            </p>
-          ) : (
-            <>
-              <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
-                <div className="rounded-xl bg-[#FCFAF6] p-3">
-                  <p className="text-xs text-[#7A746C]">
-                    Ingredients
-                  </p>
-
-                  <p className="mt-1 text-xl font-bold text-[#2F6B3C]">
-                    {demandAnalysis.totalIngredients}
-                  </p>
-                </div>
-
-                <div className="rounded-xl bg-[#EEF7F0] p-3">
-                  <p className="text-xs text-[#7A746C]">
-                    Covered
-                  </p>
-
-                  <p className="mt-1 text-xl font-bold text-[#2F6B3C]">
-                    {demandAnalysis.coveredIngredients}
-                  </p>
-                </div>
-
-                <div className="rounded-xl bg-[#FFF8EC] p-3">
-                  <p className="text-xs text-[#7A746C]">
-                    Need Grocery
-                  </p>
-
-                  <p className="mt-1 text-xl font-bold text-[#B87516]">
-                    {demandAnalysis.shortageIngredients}
-                  </p>
-                </div>
-
-                <div className="rounded-xl bg-[#FFF4F0] p-3">
-                  <p className="text-xs text-[#7A746C]">
-                    Review
-                  </p>
-
-                  <p className="mt-1 text-xl font-bold text-[#A34A2A]">
-                    {demandAnalysis.reviewIngredients}
-                  </p>
-                </div>
-              </div>
-
-              <div className="mt-4 space-y-2">
-                {demandAnalysis.ingredientDemands.length === 0 ? (
-                  <p className="rounded-xl bg-[#FCFAF6] p-3 text-sm text-[#7A746C]">
-                    No remaining ingredient demand.
-                  </p>
-                ) : (
-                  demandAnalysis.ingredientDemands.map(
-                    (item) => (
-                      <div
-                        key={`${item.normalizedName}-${item.unit}`}
-                        className="rounded-xl border border-[#EADCC4] bg-[#FCFAF6] p-3"
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div>
-                            <p className="font-semibold text-[#245B32]">
-                              {item.name}
-                            </p>
-
-                            <p className="mt-1 text-xs text-[#7A746C]">
-                              Required:{" "}
-                              {item.requiredQuantity}{" "}
-                              {item.unit}
-                            </p>
-
-                            <p className="text-xs text-[#7A746C]">
-                              Home Inventory:{" "}
-                              {item.pantryQuantity}{" "}
-                              {item.unit}
-                            </p>
-
-                            <p className="text-xs text-[#7A746C]">
-                              Grocery shortage:{" "}
-                              {item.shortageQuantity}{" "}
-                              {item.unit}
-                            </p>
-                          </div>
-
-                          <span className="rounded-full border border-[#EADCC4] bg-white px-2.5 py-1 text-xs font-semibold uppercase text-[#5A4032]">
-                            {item.status}
-                          </span>
-                        </div>
-
-                        <p className="mt-2 text-xs text-[#7A746C]">
-                          {item.message}
-                        </p>
-
-                        {item.sourceRecipeNames.length > 0 && (
-                          <p className="mt-2 text-xs font-medium text-[#5A4032]">
-                            From:{" "}
-                            {item.sourceRecipeNames.join(", ")}
-                          </p>
-                        )}
-                      </div>
-                    )
-                  )
-                )}
-              </div>
-            </>
-          )}
-        </section>
+        
             <button
               type="button"
               disabled={

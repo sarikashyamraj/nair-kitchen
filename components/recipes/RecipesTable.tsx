@@ -407,7 +407,7 @@ export default function RecipesTable({
     /*
      * Work against a local copy so
      * several selected ingredients
-     * can be processed together.
+     * can safely update the same list.
      */
     let nextShopping =
       shopping.map(
@@ -424,8 +424,13 @@ export default function RecipesTable({
       ShoppingItem[] = [];
 
     /*
-     * Recipe → Grocery allocations
-     * that need to be persisted.
+     * Recipe → Grocery allocations.
+     *
+     * These initially reference the
+     * local Grocery IDs.
+     *
+     * AFTER Grocery is saved, we remap
+     * them to the final Supabase IDs.
      */
     const sourceAllocations:
       GroceryRequirementSource[] =
@@ -442,10 +447,9 @@ export default function RecipesTable({
 
       /*
        * Short / Missing:
-       * use the calculated shortage.
+       * use calculated shortage.
        *
-       * Available item manually
-       * selected:
+       * Available item manually selected:
        * user explicitly wants one
        * recipe-sized extra quantity.
        */
@@ -517,6 +521,11 @@ export default function RecipesTable({
           id:
             crypto.randomUUID(),
 
+          /*
+           * Temporary/local Grocery ID.
+           * This will be replaced with
+           * the final saved Grocery ID.
+           */
           groceryItemId:
             newItem.id,
 
@@ -531,11 +540,6 @@ export default function RecipesTable({
 
           ingredientName,
 
-          /*
-           * Store the TOTAL allocation
-           * currently contributed by
-           * this recipe.
-           */
           quantity:
             analysisItem
               .allocatedQuantity +
@@ -580,11 +584,6 @@ export default function RecipesTable({
           analysisItem.unit
         );
 
-      /*
-       * We deliberately do not create
-       * a duplicate row when units are
-       * incompatible.
-       */
       if (
         existingUnit !==
         ingredientUnit
@@ -620,11 +619,8 @@ export default function RecipesTable({
       ] = updatedItem;
 
       /*
-       * If this Grocery row was already
-       * added to itemsToSave during the
-       * same operation, replace that
-       * pending version rather than
-       * adding another save.
+       * Replace a previous pending save
+       * for the same Grocery row.
        */
       const saveIndex =
         itemsToSave.findIndex(
@@ -699,17 +695,64 @@ export default function RecipesTable({
     }
 
     /* ======================================
-       Save Grocery Rows
+       Save Grocery Rows FIRST
+
+       Sequential saving is deliberate.
+
+       saveCloudGroceryItem() may merge a
+       new temporary Grocery row into an
+       existing cloud Grocery row and
+       therefore return a DIFFERENT ID.
     ====================================== */
 
-    const savedItems =
-      await Promise.all(
-        itemsToSave.map(
-          (item) =>
-            saveCloudGroceryItem(
-              item
-            )
-        )
+    const savedItems:
+      ShoppingItem[] = [];
+
+    const finalIdByOriginalId =
+      new Map<
+        string,
+        string
+      >();
+
+    for (
+      const item of
+      itemsToSave
+    ) {
+      const savedItem =
+        await saveCloudGroceryItem(
+          item
+        );
+
+      savedItems.push(
+        savedItem
+      );
+
+      finalIdByOriginalId.set(
+        item.id,
+        savedItem.id
+      );
+    }
+
+    /* ======================================
+       Remap Recipe Source Allocations
+
+       IMPORTANT:
+       Requirement sources must point at
+       the FINAL Grocery row returned by
+       Supabase, never a temporary ID.
+    ====================================== */
+
+    const remappedSourceAllocations =
+      sourceAllocations.map(
+        (source) => ({
+          ...source,
+
+          groceryItemId:
+            finalIdByOriginalId.get(
+              source.groceryItemId
+            ) ??
+            source.groceryItemId,
+        })
       );
 
     /* ======================================
@@ -717,36 +760,73 @@ export default function RecipesTable({
     ====================================== */
 
     if (
-      sourceAllocations.length >
+      remappedSourceAllocations.length >
       0
     ) {
       await saveCloudGroceryRequirementSources(
-        sourceAllocations
+        remappedSourceAllocations
       );
     }
 
-    /*
-     * Replace locally-created Grocery
-     * objects with the versions returned
-     * from Supabase.
-     */
-    const savedById =
-      new Map(
-        savedItems.map(
-          (item) => [
-            item.id,
-            item,
-          ]
-        )
-      );
+    /* ======================================
+       Reconcile Local Grocery State
 
-    nextShopping =
-      nextShopping.map(
-        (item) =>
-          savedById.get(
-            item.id
-          ) ?? item
-      );
+       A temporary Grocery row may have
+       been merged into an existing cloud
+       Grocery row with a different ID.
+    ====================================== */
+
+    for (
+      let index = 0;
+      index <
+      itemsToSave.length;
+      index += 1
+    ) {
+      const originalItem =
+        itemsToSave[
+          index
+        ];
+
+      const savedItem =
+        savedItems[
+          index
+        ];
+
+      /*
+       * If Supabase returned a different
+       * ID, remove the temporary row.
+       */
+      if (
+        originalItem.id !==
+        savedItem.id
+      ) {
+        nextShopping =
+          nextShopping.filter(
+            (item) =>
+              item.id !==
+              originalItem.id
+          );
+      }
+
+      const savedIndex =
+        nextShopping.findIndex(
+          (item) =>
+            item.id ===
+            savedItem.id
+        );
+
+      if (
+        savedIndex >= 0
+      ) {
+        nextShopping[
+          savedIndex
+        ] = savedItem;
+      } else {
+        nextShopping.push(
+          savedItem
+        );
+      }
+    }
 
     setShopping(
       nextShopping
