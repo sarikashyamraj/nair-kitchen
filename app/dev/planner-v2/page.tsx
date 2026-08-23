@@ -5,7 +5,9 @@ import {
   useMemo,
   useState,
 } from "react";
-
+import {
+  loadCloudGrocery,
+} from "../../../services/groceryService";
 import {
   addRecipeToCloudPlannedMeal,
   deleteCloudPlannedMeal,
@@ -45,7 +47,9 @@ import {
 import {
   GroceryRequirementSource,
 } from "../../../types/groceryRequirementSource";
-
+import {
+  applyPlannerGroceryReconciliation,
+} from "../../../services/plannerGroceryPersistenceService";
 
 const TEST_WEEK_START =
   "2026-08-17";
@@ -62,6 +66,7 @@ export default function PlannerV2DevPage() {
   recipes,
   pantry,
   shopping,
+  setShopping,
   isKitchenLoaded,
 } = useKitchen();
 
@@ -164,6 +169,12 @@ const demandAnalysis =
         await loadCloudWeeklyMealPlan(
           TEST_WEEK_START
         );
+        const loadedShopping =
+  await loadCloudGrocery();
+
+setShopping(
+  loadedShopping
+);
 if (loadedPlan) {
   const loadedSources =
     await loadCloudGroceryRequirementSourcesBySource(
@@ -377,7 +388,65 @@ if (loadedPlan) {
       );
     }
   }
+async function handleApplyPlannerGrocery() {
+  if (
+    !plan ||
+    !groceryReconciliation
+  ) {
+    return;
+  }
 
+  if (
+    groceryReconciliation.reviewCount >
+    0
+  ) {
+    setMessage(
+      "Planner Grocery changes contain items that require review."
+    );
+
+    return;
+  }
+
+  if (
+    !groceryReconciliation.hasChanges
+  ) {
+    setMessage(
+      "Planner Grocery is already up to date."
+    );
+
+    return;
+  }
+
+  try {
+    setMessage(
+      "Applying Planner Grocery changes..."
+    );
+
+    const result =
+      await applyPlannerGroceryReconciliation(
+        groceryReconciliation,
+        `Planner week ${plan.weekStartDate}`
+      );
+
+    setMessage(
+      `Planner Grocery updated successfully. ${result.savedItems.length} Grocery item(s) saved.`
+    );
+
+    /*
+     * Reload everything so the screen
+     * verifies what Supabase actually
+     * persisted rather than assuming
+     * the local state is correct.
+     */
+    await reloadPlan();
+  } catch (error) {
+    setMessage(
+      error instanceof Error
+        ? error.message
+        : "Unable to apply Planner Grocery changes."
+    );
+  }
+}
   if (!isKitchenLoaded) {
     return (
       <div className="p-6">
@@ -865,10 +934,44 @@ if (loadedPlan) {
               </div>
             )
           )
-        )}
-      </div>
-    </>
-  )}
+             )}
+    </div>
+
+    {/* Apply Planner Grocery Changes */}
+    <div className="mt-5 border-t border-[#EAD9BE] pt-5">
+      <button
+        type="button"
+        onClick={
+          handleApplyPlannerGrocery
+        }
+        disabled={
+          isLoading ||
+          !groceryReconciliation.hasChanges ||
+          groceryReconciliation.reviewCount > 0
+        }
+        className="
+          w-full rounded-xl
+          bg-[#2F6B3C]
+          px-4 py-3
+          font-semibold text-white
+          transition
+          hover:bg-[#285D34]
+          disabled:cursor-not-allowed
+          disabled:opacity-50
+        "
+      >
+        {isLoading
+          ? "Updating Grocery..."
+          : "Apply Planner Grocery Changes"}
+      </button>
+
+      <p className="mt-2 text-center text-xs text-[#7A746C]">
+        Applies only safe Planner adjustments.
+        Review items are never changed automatically.
+      </p>
+    </div>
+  </>
+)}
 </section>
         <section className="rounded-2xl border border-[#EADCC4] bg-white p-4 shadow-sm">
           <div className="flex items-center justify-between gap-3">

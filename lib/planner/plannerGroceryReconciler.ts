@@ -1025,17 +1025,65 @@ export function reconcilePlannerGrocery(
     ShoppingItem[]
 ): PlannerGroceryReconciliation {
   const currentDemandItems =
-    demandAnalysis
-      .ingredientDemands
-      .map(
-        (demand) =>
-          reconcileCurrentDemand(
-            weeklyPlanId,
-            demand,
-            plannerSources,
-            shopping
-          )
-      );
+  demandAnalysis
+    .ingredientDemands
+    .filter(
+      (demand) => {
+        /*
+         * Always keep analyzer-level
+         * Review items.
+         */
+        if (
+          demand.status ===
+          "review"
+        ) {
+          return true;
+        }
+
+        /*
+         * Current Planner shortage means
+         * Grocery may need an update.
+         */
+        if (
+          demand.shortageQuantity >
+          0
+        ) {
+          return true;
+        }
+
+        /*
+         * Even when current shortage is
+         * zero, keep the ingredient if
+         * THIS Planner week previously
+         * allocated Grocery quantity.
+         *
+         * That allows Reduce / Remove.
+         */
+        const existingPlannerSource =
+          plannerSources.some(
+            (source) =>
+              source.sourceType ===
+                "planner" &&
+              source.sourceId ===
+                weeklyPlanId &&
+              normalizeText(
+                source.ingredientName
+              ) ===
+                demand.normalizedName
+          );
+
+        return existingPlannerSource;
+      }
+    )
+    .map(
+      (demand) =>
+        reconcileCurrentDemand(
+          weeklyPlanId,
+          demand,
+          plannerSources,
+          shopping
+        )
+    );
 
   const removedItems =
     findRemovedPlannerAllocations(
